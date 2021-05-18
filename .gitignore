@@ -2,7 +2,9 @@
 __pycache__/
 *.py[cod]
 *$py.class
-
+.env
+bot.py
+dsbot.code-workspace
 # C extensions
 *.so
 
