@@ -12,3 +12,4 @@ um bot para albion online um mmorpg
 </form>
 <!-- FINAL FORMULARIO BOTAO PAGSEGURO -->
 
+[💡Donate💡](https://pag.ae/7X9NE4isG)
