@@ -1,7 +1,7 @@
 # tesourAO
 um bot para albion online um mmorpg
-{{< rawhtml >}}
-<!-- INICIO FORMULARIO BOTAO PAGSEGURO -->
+
+<!-- raw html -->
 <form action="https://pagseguro.uol.com.br/checkout/v2/donation.html" method="post">
 <!-- NÃO EDITE OS COMANDOS DAS LINHAS ABAIXO -->
 <input type="hidden" name="currency" value="BRL" />
@@ -9,5 +9,5 @@ um bot para albion online um mmorpg
 <input type="hidden" name="iot" value="button" />
 <input type="image" src="https://stc.pagseguro.uol.com.br/public/img/botoes/doacoes/120x53-doar-azul.gif" name="submit" alt="Pague com PagSeguro - é rápido, grátis e seguro!" />
 </form>
-<!-- FINAL FORMULARIO BOTAO PAGSEGURO -->
-{{< /rawhtml >}}
+
+
