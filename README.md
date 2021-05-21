@@ -15,10 +15,12 @@ This is a bot for discord, which collects information from the unofficial API of
 Collector:
 
    ```c <fame_grather> <tier for contribuiting>``` - Calculates the contribution of the collection week
+
    ![Image of command C](https://github.com/LeandroLimaPRO/tesourAO/blob/main/images/c_c.png?raw=true)
 
 
    ```changerate <value in %>``` - Change guild collection rate
+   
    ![Image of comand mudar taxa](https://github.com/LeandroLimaPRO/tesourAO/blob/main/images/c_m.png?raw=true)
 
    ```rate``` - Returns current rate guild for grather
