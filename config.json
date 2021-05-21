@@ -1,0 +1,5 @@
+{
+"taxa": 15, 
+"atividades": ["Albion Online", "Coletando Trash", "Coletando Almas", "Massacrando Noob"],
+"quando": ["day","week", "month"]
+}
