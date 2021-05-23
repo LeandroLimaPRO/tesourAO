@@ -36,10 +36,10 @@ No Category:
    help - Shows this message
 
 Type? Help command for more info on a command.
-```
+
 
 You can also type? Help category for more info on a category
-
+```
 
 BRAZILIAN: [💡Donate💡](https://pag.ae/7X9NE4isG)
    
