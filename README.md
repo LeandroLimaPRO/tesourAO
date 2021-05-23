@@ -8,7 +8,7 @@ This is a bot for discord, which collects information from the unofficial API of
 
 - Manage members on discord based on Albion information
 
-### We do not charge for the application, but we need to keep the server alive. Please help us with a small contribution that you can determine the [💡Donate💡](https://pag.ae/7X9NE4isG)
+### We do not charge for the application, but we need to keep the server alive. Please help us with a small contribution that you can determine the brasilian state: [💡Donate💡](https://pag.ae/7X9NE4isG) others nation [💡Donate💡](https://www.paypal.com/donate?business=DWG2YDSBQFBFJ&item_name=Projects+development+in+python&currency_code=BRL)
 ## Commands you have:
 
 
@@ -39,7 +39,17 @@ Type? Help command for more info on a command.
 You can also type? Help category for more info on a category
 
 
-[💡Donate💡](https://pag.ae/7X9NE4isG)
+BRAZILIAN: [💡Donate💡](https://pag.ae/7X9NE4isG)
+   
+OTHERS NATION: [💡Donate💡](https://www.paypal.com/donate?business=DWG2YDSBQFBFJ&item_name=Projects+development+in+python&currency_code=BRL)
+
+<form action="https://www.paypal.com/donate" method="post" target="_top">
+<input type="hidden" name="business" value="DWG2YDSBQFBFJ" />
+<input type="hidden" name="item_name" value="Projects development in python" />
+<input type="hidden" name="currency_code" value="BRL" />
+<input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif" border="0" name="submit" title="PayPal - The safer, easier way to pay online!" alt="Donate with PayPal button" />
+<img alt="" border="0" src="https://www.paypal.com/en_BR/i/scr/pixel.gif" width="1" height="1" />
+</form>
 
 <!-- INICIO FORMULARIO BOTAO PAGSEGURO -->
 <form action="https://pagseguro.uol.com.br/checkout/v2/donation.html" method="post">
