@@ -27,14 +27,16 @@ Collector:
 
 Member:
 
-   pi <Nickname> - Consult player information in Albion
-      ![Image of command pi](https://github.com/LeandroLimaPRO/tesourAO/blob/main/images/c_pi.png?raw=true)
-
+   ```pi <Nickname>``` - Consult player information in Albion
+   
+   ![Image of command pi](https://github.com/LeandroLimaPRO/tesourAO/blob/main/images/c_pi.png?raw=true)
+```
 No Category:
 
    help - Shows this message
 
 Type? Help command for more info on a command.
+```
 
 You can also type? Help category for more info on a category
 
