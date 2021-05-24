@@ -28,6 +28,7 @@ async def on_ready():
     activity = discord.Game(name=atividade, type=3)
     await bot.change_presence(status=discord.Status.idle, activity=activity)
 
+
 class Membro (commands.Cog):
     '''
     CLASSE DESTINADA À PLAYERS
@@ -97,6 +98,7 @@ class Coletor(commands.Cog):
         '''
         calcula a taxa de doação de coleta
         '''
+        id_guild = ao.get_guild_id("S A M U")
         if    t_doar == 5:
             return round(((fame_semanal/100)* taxa)/22)
         elif  t_doar == 6:
@@ -122,8 +124,8 @@ class Coletor(commands.Cog):
         await ctx.send(f"Taxa de coleta é de {self.taxa_nova}%")
 
     @commands.command(name = 'c', help = "Calcula a contribuição da semana de coleta") #calculadora de taxa de coleta
-    async def calcular_taxa_coleta(self,ctx, fama_coleta_semanal: int, tier: int, help= "Quanto você deverá doar de coleta. Precisa-se da sua fama semanal e o tier que deseja coletar"):
-        self.a_doar = self.doacao_coleta(fama_coleta_semanal, tier, self.taxa_nova)
+    async def calcular_taxa_coleta(self,ctx, nick_player: str, tier: str, help= "Quanto você deverá doar de coleta. Precisa-se da sua fama semanal e o tier que deseja coletar"):
+        self.a_doar = self.doacao_coleta(nick_player, tier, self.taxa_nova)
         print(f"[c]{ctx.author.nick}: {self.a_doar} de T{tier}")
         if int(self.a_doar) == 0:
             cor = Color.blurple()
