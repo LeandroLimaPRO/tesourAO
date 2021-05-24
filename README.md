@@ -11,6 +11,7 @@ This is a bot for discord, which collects information from the unofficial API of
 ### We do not charge for the application, but we need to keep the server alive. Please help us with a small contribution that you can determine the brasilian state: [💡Donate💡](https://pag.ae/7X9NE4isG) others nation [💡Donate💡](https://www.paypal.com/donate?business=DWG2YDSBQFBFJ&item_name=Projects+development+in+python&currency_code=BRL)
 
 PayPal Donate:
+
 ![Donate of paypal](https://github.com/LeandroLimaPRO/tesourAO/blob/main/images/paypal_qr.png?raw=true)
 
 
