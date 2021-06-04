@@ -6,6 +6,9 @@ __pycache__/
 test.py
 tesourAO.code-workspace
 config.json
+dataguild.json
+roles.json
+debug.log
 # C extensions
 *.so
 

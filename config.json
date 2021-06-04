@@ -1,14 +1,16 @@
-{
-"atividades": ["Albion Online", "Coletando Trash", "Coletando Almas", "Massacrando Noob"],
-"quando": ["day","week", "month"],
-"taxa": 20,
-"guilds": 
-    {
-        "835515950178500638":{
-            "name":"S A M U",
-            "lang": "pt-br",
-            "taxa": 20
-        }
-    }
-
+{   
+    "prefix": "!",
+    "data_guild": "dataguild.json",
+    "role_file": "roles.json",
+    "atividades": [
+        "Marocando o visinho",
+        "Fofocando em Albion",
+        "Coletando Almas",
+        "Massacrando Noob"
+    ],
+    "quando": [
+        "day",
+        "week",
+        "month"
+    ]
 }
