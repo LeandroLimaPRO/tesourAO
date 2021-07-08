@@ -1,41 +1,23 @@
-# bot.py
-import os
-import random
-import sys
-import logging
-#from .Lib.Apialbion import AlbionAPI as Ao
-from hurry.filesize import size, si
-import discord
-from discord.colour import Color
-from dotenv import load_dotenv
-from discord.ext import commands
-import json
-import requests
-import pandas as pd
-import asyncio
-from Lib.data_json import *
-from Lib.inits import *
-from Lib.Adminds import Admin
-from Lib.Toolsds import Tools
-from Lib.Membrods import Membro
-
-
-
-load_dotenv()
-TOKEN = os.getenv('DISCORD_TOKEN')
-GUILD = os.getenv('DISCORD_GUILD')
-
-bot = commands.Bot(command_prefix=prefix)
+from inits import *
+from Adminds import Admin
+from Toolsds import Tools
+from Membrods import Membro
+from discord.client import Client
+from discord.member import Member
 
 @bot.event
 async def on_ready():
-    logger.info(f'{bot.user.name} conectou ao discord!')
-    logger.info(f'')
+    logger.info(f'{bot.user.name} conectou ao discord!\n')
+    logger.info(f'\n')
+    logger.warning(f'{len(bot.guilds)}')
+    for guild in list(bot.guilds):
+        logger.info(guild)
     atividade = random.choice(atividades)
     activity = discord.Game(name=atividade, type=3)
     await bot.change_presence(status=discord.Status.online, activity=activity)
-
-
+          
+        #for p in  print(member) g.members:
+        #    pint(p.name)r
 bot.add_cog(Tools(bot))
 bot.add_cog(Membro(bot))
 bot.add_cog(Admin(bot))
