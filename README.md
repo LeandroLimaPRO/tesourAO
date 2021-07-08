@@ -14,37 +14,97 @@ PayPal Donate:
 
 ![Donate of paypal](https://github.com/LeandroLimaPRO/tesourAO/blob/main/images/paypal_qr.png?raw=true)
 
+## Resources:
+
+* Multi-language (70%)
+
+* Tax system (silver and grather)
+
+* Blacklist System
+
+* Top pve and grather 
+
+* Player Info
+
 
 ## Commands you have:
 
+### Installation
 
-Collector:
+   ```h <language: pt-br or en-us>```
+   ![Image of command C](https://github.com/LeandroLimaPRO/tesourAO/blob/main/images/h.png?raw=true)
 
-   ```c <fame_grather> <tier for contribuiting>``` - Calculates the contribution of the collection week
+
+   ![Image of command C](https://github.com/LeandroLimaPRO/tesourAO/blob/main/images/hus.png?raw=true)
+
+### SYSTEMS OF TAX
+   ```?rtx <tax=0> <min_fame=0>``` - 
+   Register in channel for tax transmission
+
+   ![Image of command C](https://github.com/LeandroLimaPRO/tesourAO/blob/main/images/caloteirinhos.png?raw=true)
+
+   ```?cts <new_cicle=0: No (is update)| 1: New cicle>``` - 
+   Sends contribution deposit data use archive .txt 
+
+   ![Image of command C](https://github.com/LeandroLimaPRO/tesourAO/blob/main/images/cts.png?raw=true)
+
+   ```c <fame_grather> <number of tier for contribuiting = 5>``` - Calculates the contribution of the collection week
 
    ![Image of command C](https://github.com/LeandroLimaPRO/tesourAO/blob/main/images/c_c.png?raw=true)
 
 
-   ```changerate <value in %>``` - Change guild collection rate
+   ```?mt [tax_colector=0] [tax_silver=0] [min_fame=0]``` - Change guild collection rate
    
    ![Image of comand mudar taxa](https://github.com/LeandroLimaPRO/tesourAO/blob/main/images/c_m.png?raw=true)
 
    ```rate``` - Returns current rate guild for grather
 
-Member:
+### MEMBER SYSTEM
 
    ```pi <Nickname>``` - Consult player information in Albion
-   
    ![Image of command pi](https://github.com/LeandroLimaPRO/tesourAO/blob/main/images/c_pi.png?raw=true)
+
+
+   ```rt ``` - Register channel for TOP's transmission
+   
+   ![Image of command pi](https://github.com/LeandroLimaPRO/tesourAO/blob/main/images/top_pve.png?raw=true)
+
+   ![Image of command pi](https://github.com/LeandroLimaPRO/tesourAO/blob/main/images/top_coleta.png?raw=true)
+   
+## ALL Commands
+
+* USE ```?help <comand>``` help command for how to use
+
+
 ```
-No Category:
+Admin:
+  ai    Add player insention of tax
+  ci    check player insention of tax system
+  h     Tutorial for instalation bot in server
+  lg    Lists guilds registered in the bot
+  lr    list added positions
+  rb    Register channel for blacklist transmission
+  rg    Register guild and discord in bot. note: If the name has a space, rep...
+  rgi   Register channel for guild info transmission
+  ri    remove player insention of tax system
+  rr    Requires prior registration. Add management positions
+  rt    Register channel for TOP's transmission
+  rtax  remove player tax system
+  rtx   Register channel for tax transmission
 
-   help - Shows this message
+Membro:
+  b     blacklista player
+  br    Remove player to blacklist
+  cb    checa player no blacklist
+  pi    Consulta informações do player no Albion
+Tools:
+  c     How much should you donate collection. Your weekly fame and the level...
+  cts   Sends contribution deposit data
+  mt    Change guild Gathering rate
+  tax   Return tax
+​No Category:
+  help  Shows this message
 
-Type? Help command for more info on a command.
-
-
-You can also type? Help category for more info on a category
 ```
 
 BRAZILIAN: [💡Donate💡](https://pag.ae/7X9NE4isG)
