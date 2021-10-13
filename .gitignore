@@ -11,7 +11,8 @@ roles.json
 debug.log
 # C extensions
 *.so
-*.py
+#*.py
+mdb.py
 *.json
 # Distribution / packaging
 .Python

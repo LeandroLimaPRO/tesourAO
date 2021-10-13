@@ -75,38 +75,6 @@ PayPal Donate:
 
 * USE ```?help <comand>``` help command for how to use
 
-
-```
-Admin:
-  ai    Add player insention of tax
-  ci    check player insention of tax system
-  h     Tutorial for instalation bot in server
-  lg    Lists guilds registered in the bot
-  lr    list added positions
-  rb    Register channel for blacklist transmission
-  rg    Register guild and discord in bot. note: If the name has a space, rep...
-  rgi   Register channel for guild info transmission
-  ri    remove player insention of tax system
-  rr    Requires prior registration. Add management positions
-  rt    Register channel for TOP's transmission
-  rtax  remove player tax system
-  rtx   Register channel for tax transmission
-
-Membro:
-  b     blacklista player
-  br    Remove player to blacklist
-  cb    checa player no blacklist
-  pi    Consulta informações do player no Albion
-Tools:
-  c     How much should you donate collection. Your weekly fame and the level...
-  cts   Sends contribution deposit data
-  mt    Change guild Gathering rate
-  tax   Return tax
-​No Category:
-  help  Shows this message
-
-```
-
 BRAZILIAN: [💡Donate💡](https://pag.ae/7X9NE4isG)
    
 OTHERS NATION: [💡Donate💡](https://www.paypal.com/donate?business=DWG2YDSBQFBFJ&item_name=Projects+development+in+python&currency_code=BRL)
