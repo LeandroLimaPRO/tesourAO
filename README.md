@@ -16,7 +16,7 @@ PayPal Donate:
 
 ## Resources:
 
-* Multi-language (70%)
+* Multi-language (see ?language_list)
 
 * Tax system (silver and grather)
 
