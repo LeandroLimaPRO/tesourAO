@@ -2,6 +2,7 @@ import sys
 import pandas as pd
 import logging
 import colorlog
+from deep_translator import GoogleTranslator
 
 # ultls
 import os
@@ -47,6 +48,12 @@ logger.addHandler(fh)
 logger.addHandler(sh)
 
 
+def mudarLingua(lang):
+    tr = GoogleTranslator()
+    lang = [l for l in tr.supported_languages if l == lang]
+    if not lang:
+        return False
+    return  GoogleTranslator(source='auto', target=lang[0])
 
     
 def is_guild_owner(ctx):

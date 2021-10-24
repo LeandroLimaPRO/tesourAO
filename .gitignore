@@ -1,11 +1,13 @@
 # Byte-compiled / optimized / DLL files
 backup
 BACKUP
-
+dbbackup
+config.json
 __pycache__/
 *.py[cod]
 *$py.class
 .env
+.sql
 test.py
 tesourAO.code-workspace
 config.json

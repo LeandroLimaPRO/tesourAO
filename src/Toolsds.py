@@ -3,14 +3,17 @@ from os import remove
 
 class Tools(commands.Cog):
     #função retorna fama coletada na semana
-    async def fama_coleta_semanal(self, idguild:str ,player:str):
+    async def fama_coleta_semanal(self, idguild:str ,player:str, lang="english"):
+
         logger.info("Iniciando coleta de estatistica")
         #stats_ = await get_statistics_guild(idguild, range= "week", types="Gathering", subtype="All")
+
         try:
             stats_ = await get_statistics_guild(guild_id=idguild, range=0, types=1, limit = 100)
         except :
             logger.error("Não foi possivel  obter estatisticas")      
             return 0
+
         if len(stats_)>2:
             logger.debug(stats_)
             logger.info("Encontrou dados!")
@@ -55,32 +58,40 @@ class Tools(commands.Cog):
             return val
     #comando muda taxa de doação
     @commands.command(name = 'mt', help= "Change guild Gathering rate")
-    async def mudar_taxa(self,ctx,tax_colector=0,tax_silver = 0, min_fame=0):
+    async def mudar_taxa(self,ctx,tax_colector=0,tax_silver = 0, min_fame=0,lang="english"):
+
         guildb = obter_dados(Guild, ctx.guild.id)
+        tr = mudarLingua(guildb.lang)
+
         if has_roles(ctx):
             if tax_colector !=guildb.taxa or tax_colector>0:
                 guildb.taxa= int(tax_colector)
                 guildb.taxac_s = True
                 session.flush()
+
             if tax_silver != guildb.taxa_p or tax_silver>0:
                 guildb.taxa_p = int(tax_silver)
                 guildb.taxap_s = True
                 session.flush()
+
             if min_fame != guildb.fame_taxa or min_fame>0:
                 guildb.fame_taxa = int(min_fame)
                 guildb.taxap_s = True
                 session.flush()
+
             session.commit()
             logger.info(f"[mudartaxa] {ctx.guild.name} Taxa de coleta foi alterada para {tax_colector}%")
-            await ctx.send(msg[guildb.lang]["mt"]["sucess"].format(tax_colector))
+            await ctx.send(tr.translate(msg["mt"]["sucess"].format(tax_colector)))
 
         else:
-            await ctx.send(msg[guildb.lang]["not-role"])
+            await ctx.send(tr.translate(msg["not-role"]))
+
     #comando envia dados de contribuição de taxa fixa
     @commands.command(name = 'cts', help= "Sends contribution deposit data")
     async def contribuicoes_taxas_semanais(self,ctx):
         await ctx.channel.trigger_typing()
         lang = "en-us"
+        tr = mudarLingua(lang)
         #variaveis locais inicializadas
         total = 0 #variavel de prata total arrecadado
         #totaldp = 0
@@ -94,6 +105,7 @@ class Tools(commands.Cog):
             if is_guild_reg(id_):
                 #print("guild registrado")
                 g = obter_dados(Guild, id_) #inicializa banco de guilds
+                tr = mudarLingua(g.lang)
                 tx = session.query(Taxa).filter_by(guild_id = id_).all() #inicializa banco de taxas
                 lang = g.lang #obtem lingua apartir do banco
                 taxa_p = g.taxa_p
@@ -123,10 +135,10 @@ class Tools(commands.Cog):
                 try:
                     data= read_txt(file_)
                 except:
-                    await ctx.send("Error ao ler arquivo")
+                    await ctx.send(tr.translate("Error ao ler arquivo"))
                     return
                 #INTERFACE - cria embed do discord
-                embed= discord.Embed(title=msg[lang]["tax"]["title"], color=discord.Color.dark_gold())
+                embed= discord.Embed(title=tr.translate(msg["tax"]["title"]), color=discord.Color.dark_gold())
                 desc =""
                 total = 0
                 await ctx.channel.trigger_typing()
@@ -145,16 +157,17 @@ class Tools(commands.Cog):
                             session.flush()
                 session.commit()
                 await ctx.channel.trigger_typing()
-                desc += msg[lang]["tax"]["info-dep"].format(size(total,system=si))
+                desc += tr.translate(msg["tax"]["info-dep"].format(size(total,system=si)))
                 embed.description = desc
-                embed.add_field(name=msg[lang]["more"],value=msg[lang]["footer"])
+                embed.add_field(name=tr.translate(msg["more"]),value=tr.translate(msg["footer"]))
                 await ctx.send(embed=embed)
             else:
-                await ctx.send(msg[lang]["not-reg"])
+                await ctx.send(tr.translate(msg["not-reg"]))
         else:
-            await ctx.send(msg[lang]["not-role"])
+            await ctx.send(tr.translate(msg["not-role"]))
     @commands.command(name = 'at', help= "Starts new contribution period (adds + fee to be paid)")
     async def atualiza_periodo(self, ctx, lang = "en-us"):
+        tr = mudarLingua(lang)
         id_ = str(ctx.guild.id) #id do discord
         #taxa_file = cfg["taxa_fixa"] [path] do banco de pagamento de taxa
         tx =session.query(Taxa).filter_by(guild_id = id_).all() #inicializa banco de taxas
@@ -162,7 +175,7 @@ class Tools(commands.Cog):
             #verifica se a guild foi registrada
             if is_guild_reg(id_):
                 g = obter_dados(Guild, id_) #inicializa banco de guilds
-                lang = g.lang #obtem lingua apartir do banco
+                tr = mudarLingua(g.lang) #obtem lingua apartir do banco
                 taxa_p = g.taxa_p
                 for p in  tx:
                     if p.ciclo >=1 :
@@ -172,21 +185,25 @@ class Tools(commands.Cog):
                         p.saldo = sal - taxa_p
                         session.flush()
                 session.commit()
-                await ctx.send(f"{ctx.author.mention} A **new cycle** has started! Debit of **{size(taxa_p,system=si)}** has been added to taxpayers")
+                await ctx.send(tr.translate(f"{ctx.author.mention} A **new cycle** has started! Debit of **{size(taxa_p,system=si)}** has been added to taxpayers"))
             else:
-                await ctx.send(msg[lang]["not-reg"])
+                await ctx.send(tr.translate(msg["not-reg"]))
         else:
-            await ctx.send(msg[lang]["not-role"])
+            await ctx.send(tr.translate(msg["not-role"]))
     #comando retorna a taxa atual da guilda
     @commands.command(name="tax",help= "Return tax")
-    async def taxa(self,ctx):
+    async def taxa(self,ctx, lang = "english"):
+        tr = mudarLingua(lang)
         await ctx.channel.trigger_typing()
         datag = obter_dados(Guild,ctx.guild.id)
         taxa = datag.taxa
-        await ctx.send(msg[datag.lang]["tax"]["sucess"].format(taxa))
+        tr = mudarLingua(datag.lang)
+        await ctx.send(tr.translate(msg["tax"]["sucess"].format(taxa)))
+
     #comando para retornar a taxa de contribuição
     @commands.command(name = 'c', help= "How much should you donate collection. Your weekly fame and the level you want to collect are needed.") #calculadora de taxa de coleta
-    async def calcular_taxa_coleta(self,ctx, nick_player: str, tier, lang="en-us"):
+    async def calcular_taxa_coleta(self,ctx, nick_player: str, tier, lang="english"):
+        tr = mudarLingua(lang)
         await ctx.channel.trigger_typing()
         idg=str(ctx.guild.id)
         tier = int("".join(filter(str.isdigit, tier)))
@@ -194,7 +211,7 @@ class Tools(commands.Cog):
             datag = obter_dados(Guild,idg)
             guild_name = datag.name
             guild_id = datag.id
-            lang = datag.lang
+            tr = mudarLingua(datag.lang)
             if is_tax_grather_system(idg):
                 taxa = datag.taxa
                 
@@ -214,27 +231,26 @@ class Tools(commands.Cog):
                         #print(f"{fama_coleta}::{a_doar} :::{taxa}")
                 await ctx.channel.trigger_typing()
                 await ctx.send(ctx.author.mention)
-                embeds = discord.Embed(title=f'{nick_player} deve contribuir com', color =  Color.darker_grey())     
+                embeds = discord.Embed(title=tr.translate(f'{nick_player} deve contribuir com'), color =  Color.darker_grey())     
                 if int(a_doar) == 0:
                     cor = Color.blurple()
-                    resposta = f"Tente novamente. Lembre-se não aceitamos Tiers abaixo do 5"
+                    resposta = tr.translate(f"Tente novamente. Lembre-se não aceitamos Tiers abaixo do 5")
                 else:
                         cor = Color.dark_blue()
-                        embeds.add_field(name="Quantidade de recursos", value=a_doar)
-                        embeds.add_field(name= "Tier dos recursos", value=f'T{tier}')
+                        embeds.add_field(name=tr.translate("Quantidade de recursos"), value=a_doar)
+                        embeds.add_field(name= tr.translate("Tier dos recursos"), value=f'T{tier}')
                         #resposta = f"**{nick_player}** você deve pagar **{a_doar}** unidades de recursos no **T{tier}**."
-                embeds.add_field(name= "Fama Semanal", value = info_player)
-                embeds.add_field(name="Observações", value= f"\n\nLembre-se de colocar os recursos no bau de doação! \nNão esqueça de contatar um oficial.", inline=False)
+                embeds.add_field(name= tr.translate("Fama Semanal"), value = info_player)
+                embeds.add_field(name=tr.translate("Observações"), value= tr.translate(f"\n\nLembre-se de colocar os recursos no bau de doação! \nNão esqueça de contatar um oficial."), inline=False)
                     
                 embeds.set_thumbnail(url="https://raw.githubusercontent.com/LeandroLimaPRO/tesourAO/main/images/paypal_qr.png")
                     
-                fot2 = f"Taxa de {taxa}% contribubição da guilda.\n" + fot
-                embeds.add_field(name= "Mais", value=fot2, inline=False)
-                    #embeds.set_footer(text = fot)
-                logger.info(f"[c]{a_doar} de T{tier}. FAMA TOTAL {fama_coleta}")
+                fot2 = tr.translate(f"Taxa de {taxa}% contribubição da guilda.\n") + fot
+                embeds.add_field(name= tr.translate("Mais"), value=fot2, inline=False)
+                logger.info(tr.translate(f"[c]{a_doar} de T{tier}. FAMA TOTAL {fama_coleta}"))
                 await ctx.send(embed=embeds)
             else:
-                await ctx.send(msg[lang]["not-tax"])
+                await ctx.send(tr.translate(msg["not-tax"]))
         else:
-            await ctx.send(msg[lang]["not-reg"])
+            await ctx.send(tr.translate(msg["not-reg"]))
         
