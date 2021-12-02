@@ -44,8 +44,8 @@ class Guild(Base):
     taxa_p =  Column(Integer, comment="Taxa de prata")
     taxa =  Column(Integer, comment="taxa")
     fame_taxa = Column(Integer, comment="taxa de c")
-    members = relationship("Members", back_populates='guild',cascade="all, delete, delete-orphan")
-    cargos = relationship("Cargos", back_populates='guild', cascade="all, delete, delete-orphan")
+    members = relationship("Members", back_populates='guild',cascade="all, delete, delete-orphan", passive_deletes=True)
+    cargos = relationship("Cargos", back_populates='guild', cascade="all, delete, delete-orphan", passive_deletes=True)
     #field_data = relationship('members', backref="guild", uselist=False)
     ##relação
 
@@ -57,34 +57,34 @@ class Members(Base):
     name = Column(String, primary_key=True)
     id_ao = Column(String)
     fame = Column(BigInteger)
-    guild_id = Column(BigInteger, ForeignKey(Guild.id))
+    guild_id = Column(BigInteger, ForeignKey(Guild.id, ondelete="CASCADE"))
     is_cargo = Column(Boolean, default=False, comment="Define oficial")
     is_blacklist = Column(Boolean, default=False, comment="Bane Player")
     isention = Column(Boolean, default=False, comment="Isencao de taxa")
     ref_discord = Column(BigInteger, comment="Id ou nome do discord player")
     nick_discord = Column(String)
     #relacões
-    taxa = relationship("Taxa", back_populates="members", cascade="all, delete, delete-orphan", uselist=False)
-    blacklist = relationship("Blacklist", back_populates="members", cascade="all, delete, delete-orphan", uselist=False)
+    taxa = relationship("Taxa", back_populates="members", cascade="all, delete, delete-orphan", uselist=False, passive_deletes=True)
+    blacklist = relationship("Blacklist", back_populates="members", cascade="all, delete, delete-orphan", uselist=False, passive_deletes=True)
     guild = relationship("Guild", back_populates="members", cascade="all, delete, delete-orphan", uselist = False, single_parent=True)
     def __repr__(self):
         return f"<Members(name='{self.name}'\n| taxa='{self.taxa} | blacklist='{self.blacklist})>"
 
 class Taxa(Base):
     __tablename__ = 'taxa'
-    name = Column(String, ForeignKey("members.name"), primary_key=True)
+    name = Column(String, ForeignKey("members.name", ondelete="CASCADE"), primary_key=True)
     deposito = Column(Float)
     saldo = Column(Float)
     ciclo = Column(Float)
     guild_id = Column(BigInteger)
-    members = relationship("Members", back_populates="taxa", cascade="all, delete, delete-orphan",single_parent=True, uselist=False)
+    members = relationship("Members", back_populates="taxa", cascade="all, delete, delete-orphan",single_parent=True, uselist=False )
     def __repr__(self):
         return "<Taxa(name='%s' | deposito='%s'| saldo='%s' | ciclo='%s')>" % (self.name, self.deposito,  self.saldo, self.ciclo)
 
 class Blacklist(Base):
     __tablename__ = 'blacklist'
     id = Column(Integer, primary_key=True)
-    name = Column(String, ForeignKey("members.name"))
+    name = Column(String, ForeignKey("members.name", ondelete="CASCADE"))
     reason = Column(String)
     police = Column(String)
     guild_id = Column(BigInteger)
@@ -95,7 +95,7 @@ class Cargos(Base):
     __tablename__ = 'cargos'
     id = Column(Integer, primary_key=True)
     name = Column(String)
-    guild_id = Column(BigInteger, ForeignKey("guild.id"))
+    guild_id = Column(BigInteger, ForeignKey("guild.id", ondelete="CASCADE"))
     
     guild = relationship("Guild",cascade="all, delete, delete-orphan",uselist=False, single_parent=True)
     def __repr__(self):

@@ -41,7 +41,7 @@ async def get_new_players_in_guild(guild):
                     n_p += 1
                 else:
                     pl = obter_dados(Members,p_name)
-                    print(pl)
+                    #print(pl)
                     if bool(pl):
                         pl.fame = p_fame
                         pl.guild_id = guild.id
@@ -69,7 +69,10 @@ async def remove_players_in_guild(guild):
             for memb in db_memb:
                 if memb.name not in p_list:
                     del_players.append(f"{memb.name} discord {memb.nick_discord}")
-                    del memb
+                    try:
+                        session.delete(memb)
+                    except SQLAlchemyError as e:
+                        logger.error(e)
                     session.flush()
                     del_p +=1
                     
@@ -653,8 +656,8 @@ class Admin(commands.Cog):
                     logger.error(e)
                 if channel:
                     desc = ""
+                    embed = discord.Embed(title= tr.translate("Jogadores que sairam da guild"), color=discord.Color.red())
                     for player in saiu:
-                         embed = discord.Embed(title= tr.translate("Jogadores que sairam da guild"), color=discord.Color.red())
                          desc += f"{player} \n"
                     embed.description = desc
                     try:
@@ -663,13 +666,13 @@ class Admin(commands.Cog):
                         channel = False
                         logger.error(e)
                     desc = ""
-
+                    del embed
+                    embed = discord.Embed(title= tr.translate("Jogadores que Entraram da guild"), color=discord.Color.gold())
                     for player in entrou:
-                         embed2 = discord.Embed(title= tr.translate("Jogadores que Entraram da guild"), color=discord.Color.gold())
                          desc += f"{player} \n"
-                    embed2.description = desc
+                    embed.description = desc
                     try:
-                        await channel.send(embed=embed2)
+                        await channel.send(embed=embed)
                     except HTTPException as e:
                         channel = False
                         logger.error(e)
@@ -689,7 +692,7 @@ class Admin(commands.Cog):
                 lang = g.lang
                 tr = mudarLingua(lang)
                 if(g.canal_top is not None and g.id_ao is not None):
-                    print(f"{g.name} : {g.canal_top} > {g.id_ao}")
+                    #print(f"{g.name} : {g.canal_top} > {g.id_ao}")
 
                     try:
                         channel = bot.get_channel(g.canal_top)
@@ -918,18 +921,18 @@ class Admin(commands.Cog):
                 await ctx.send(tr)
                 return
             players = guild.members
-            print(players)
+            #print(players)
             if not players:
-                print(ctx.guild.id)
+                #print(ctx.guild.id)
                 players = session.query(Members).filter_by(guild_id = 827945906175082526).all()
-                print(players)
+                #print(players)
             if not players:
                 await ctx.send(tr.translate("Your guild has no players, or has not been registered in our junk"))
             else:
                 msg = ""
                 count = len(players)
                 embed = discord.Embed(title= tr.translate(f"Players({count}) List"), color=discord.Color.gold())
-                print(count)
+                #print(count)
                 for p in players:
                     msg += f"{p.name} \n"
                 embed.description =  msg
@@ -946,10 +949,10 @@ class Admin(commands.Cog):
             await ctx.send(tr)
             return
 
-        print(nick)
+        #print(nick)
         if is_guild_reg(ctx.guild.id):
             guild = obter_dados(Guild,ctx.guild.id)
-            print(guild)
+            #print(guild)
             player = obter_dados(Members,nick)
             lang = guild.lang
             tr = mudarLingua(lang)
@@ -984,8 +987,8 @@ class Admin(commands.Cog):
 
     @commands.command()
     async def teste(self,ctx):
-        print(ctx.author)
-        print(type(ctx.author))
+        #print(ctx.author)
+        #print(type(ctx.author))
         try:
             await ctx.author.edit(nick = "LeTurn")
         except HTTPException as e:
