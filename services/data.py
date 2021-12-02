@@ -2,12 +2,14 @@ import os
 import json
 import logging
 from sqlalchemy import create_engine, exists
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship, backref
 from sqlalchemy import Column, Integer, String, Float,Boolean ,ForeignKey, BigInteger
 from dotenv import load_dotenv
+from sqlalchemy.sql.expression import except_
 
 from services.data_json import *
-
+logger = logging.getLogger(__name__)
 
 #carrega arquivo .env
 load_dotenv()
@@ -27,51 +29,46 @@ session = Session()
 class Guild(Base):
     __tablename__ = 'guild'
 
-    id = Column(BigInteger, primary_key=True)
-    id_ao = Column(String)
-    name = Column(String)
-    lang = Column(String)
-    top = Column(Boolean)
-    taxap_s = Column(Boolean)
-    taxac_s = Column(Boolean)
-    canal_top = Column(BigInteger)
-    canal_blacklist = Column(BigInteger)
-    canal_taxa = Column(BigInteger)
-    canal_info = Column(BigInteger)
-    taxa_p =  Column(Integer)
-    taxa =  Column(Integer)
-    fame_taxa = Column(Integer)
+    id = Column(BigInteger, primary_key=True, comment="id da guild")
+    id_ao = Column(String, comment="Id da guild no albion")
+    id_ali = Column(String, comment="Id da Aliança")
+    name = Column(String, comment="Name da guild")
+    lang = Column(String, comment="Language")
+    top = Column(Boolean, comment="Sistema Top da guild")
+    taxap_s = Column(Boolean, comment="Sistema de taxa de prata")
+    taxac_s = Column(Boolean, comment= "Sistema de taxa de coleta")
+    canal_top = Column(BigInteger, comment="DISCORD canal top")
+    canal_blacklist = Column(BigInteger, comment= "DISCORD canal blacklist")
+    canal_taxa = Column(BigInteger, comment="DISCORD canal de taxa")
+    canal_info = Column(BigInteger, comment="DISCORD canal info")
+    taxa_p =  Column(Integer, comment="Taxa de prata")
+    taxa =  Column(Integer, comment="taxa")
+    fame_taxa = Column(Integer, comment="taxa de c")
     members = relationship("Members", back_populates='guild',cascade="all, delete, delete-orphan")
-    blacklist = relationship("Blacklist", back_populates='guild', cascade="all, delete, delete-orphan")
-    cargos  = relationship("Cargos", back_populates='guild',cascade="all, delete, delete-orphan")
-    
+    cargos = relationship("Cargos", back_populates='guild', cascade="all, delete, delete-orphan")
     #field_data = relationship('members', backref="guild", uselist=False)
     ##relação
 
     def __repr__(self):
-       return f"<Guild(id='{self.id}' |  name='{self.name}' | lang='{self.lang}' | members='{self.members}' | blacklist='{self.blacklist}')>"
+       return f"<Guild(id='{self.id}' |  name='{self.name}' | lang='{self.lang}' | members='{self.members}')>"
 
 class Members(Base):
     __tablename__ = 'members'
     name = Column(String, primary_key=True)
     id_ao = Column(String)
     fame = Column(BigInteger)
-    guild_id = Column(BigInteger, ForeignKey("guild.id"))
-    isention = Column(Boolean)
+    guild_id = Column(BigInteger, ForeignKey(Guild.id))
+    is_cargo = Column(Boolean, default=False, comment="Define oficial")
+    is_blacklist = Column(Boolean, default=False, comment="Bane Player")
+    isention = Column(Boolean, default=False, comment="Isencao de taxa")
+    ref_discord = Column(BigInteger, comment="Id ou nome do discord player")
+    nick_discord = Column(String)
     #relacões
-    guild =  relationship("Guild", back_populates="members", primaryjoin="Guild.id == Members.guild_id", uselist=False)
-    taxa = relationship("Taxa", back_populates="member", cascade="all, delete, delete-orphan", uselist=False)
+    taxa = relationship("Taxa", back_populates="members", cascade="all, delete, delete-orphan", uselist=False)
+    blacklist = relationship("Blacklist", back_populates="members", cascade="all, delete, delete-orphan", uselist=False)
+    guild = relationship("Guild", back_populates="members", cascade="all, delete, delete-orphan", uselist = False, single_parent=True)
     def __repr__(self):
-        return f"<Members(name='{self.name}'\n| guild='{self.guild.id} - {self.guild.name}' \n| taxa='{self.taxa}')>"
-
-class Cargos(Base):
-    __tablename__ = 'cargos'
-    id = Column(Integer,autoincrement=True, primary_key=True) 
-    name = Column(String)
-    guild_id = Column(BigInteger, ForeignKey("guild.id"))
-    guild =  relationship("Guild", back_populates="cargos")
-    def __repr__(self):
-        return f"<Cargos(name = '{self.name}'| {self.guild})>"
+        return f"<Members(name='{self.name}'\n| taxa='{self.taxa} | blacklist='{self.blacklist})>"
 
 class Taxa(Base):
     __tablename__ = 'taxa'
@@ -79,66 +76,127 @@ class Taxa(Base):
     deposito = Column(Float)
     saldo = Column(Float)
     ciclo = Column(Float)
-    member = relationship("Members", back_populates="taxa")
-    guild_id = Column(BigInteger,ForeignKey("guild.id"))
+    guild_id = Column(BigInteger)
+    members = relationship("Members", back_populates="taxa", cascade="all, delete, delete-orphan",single_parent=True, uselist=False)
     def __repr__(self):
         return "<Taxa(name='%s' | deposito='%s'| saldo='%s' | ciclo='%s')>" % (self.name, self.deposito,  self.saldo, self.ciclo)
 
 class Blacklist(Base):
     __tablename__ = 'blacklist'
-    
-    name = Column(String,primary_key=True)
+    id = Column(Integer, primary_key=True)
+    name = Column(String, ForeignKey("members.name"))
     reason = Column(String)
     police = Column(String)
-    guild_id = Column(BigInteger, ForeignKey("guild.id"))
-    guild = relationship("Guild", back_populates="blacklist")
+    guild_id = Column(BigInteger)
+    members= relationship("Members",back_populates="blacklist", cascade="all, delete, delete-orphan", single_parent=True, uselist=False)
     def __repr__(self):
         return "<Blacklist(name='%s' | motivo='%s'| police='%s')>" % (self.name, self.reason, self.police)
+class Cargos(Base):
+    __tablename__ = 'cargos'
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    guild_id = Column(BigInteger, ForeignKey("guild.id"))
+    
+    guild = relationship("Guild",cascade="all, delete, delete-orphan",uselist=False, single_parent=True)
+    def __repr__(self):
+        return f"<Cargos({self.id}| {self.name}| {self.guild_id})>"
 
 #verifica se a guild foi registrada
 def is_guild_reg (id):
-    return session.query(exists().where(Guild.id == id)).scalar() #retorna bool se existir
+    try:
+        return bool(session.query(exists().where(Guild.id == id)).scalar()) #retorna bool se existir
+    except SQLAlchemyError as e:
+        logger.error(e)
+        return False
 #verifica se a guilda tem sistema taxa de prata ativa
 def is_tax_silver_system(id):
-    return session.query(exists().where(Guild.id == id and Guild.taxp_s ==True)).scalar() #retorna bool se existir
+    try:
+        return bool(session.query(exists().where(Guild.id == id , Guild.taxap_s ==True)).scalar()) #retorna bool se existir
+    except SQLAlchemyError as e:
+        logger.error(e)
+        return False
 #verifica se a guilda tem sistema de taxa de coleta ativa
 def is_tax_grather_system(id):
-    return session.query(exists().where(Guild.id == id and Guild.taxc_s ==True)).scalar()
+    try:
+        return bool(session.query(exists().where(Guild.id == id , Guild.taxac_s ==True)).scalar())
+    except SQLAlchemyError as e:
+        logger.error(e)
+        return False
 #verifica se o player está na tabela membros
-def is_player_exist(guild_id,nick_player):  
-    return session.query(exists().where(Members.name == nick_player and Members.guild_id == guild_id)).scalar() #retorna bool se existir  
+def is_player_exist_on_guild(guild_id,nick_player):
+    try:  
+        return bool(session.query(Members).filter(Members.guild_id == guild_id, Members.name == nick_player).first()) #retornretorna bool se existir
+    except SQLAlchemyError as e:
+        logger.error(e) 
+#verifica se o player está na tabela membros
+def is_player_exist(nick_player):
+    try:  
+        return bool(session.query(Members).filter(Members.name == nick_player).first()) #retornretorna bool se existir
+    except SQLAlchemyError as e:
+        logger.error(e) 
 #verifica se o player tem contribuição
 def is_tax_exist(nick_player):  
-    return session.query(exists().where(Taxa.name == nick_player)).scalar() #retorna bool se existir
+    try:
+        return bool(session.query(exists().where(Taxa.name == nick_player)).scalar()) #retorna bool se existir
+    except SQLAlchemyError as e:
+        logger.error(e)
+        return False
 #verifica se o player está blacklistado
 def is_blacklisted_from_guild(guild_id, nick_player):  
-    return session.query(exists().where(
-        Blacklist.name == nick_player 
-        and Blacklist.guild_id == guild_id)).scalar() #retorna bool se existir
-
+        try:
+            re = session.query(Members).filter(Members.name == nick_player , Members.guild_id == guild_id , Members.is_blacklist==True).first()
+            '''re = session.query(exists().where(
+            Members.name == nick_player
+            and Members.guild_id == guild_id
+            and Members.is_blacklist == True)).first() '''#retorna bool se existir
+            print(re)
+            return bool(re)
+        except SQLAlchemyError as e:
+            logger.error(e)
+            return False
 #verifica se existe o cargo
-def is_cargo(guild_id, cargo):
-    return session.query(exists().where(
-        Cargos.name == cargo 
-        and Cargos.guild_id == guild_id)).scalar() #retorna bool se existir
+def is_cargo(guild_id, name):
+    try:
+        #print(session.query(Cargos).filter(Cargos.name == name and Cargos.guild_id ==guild_id).first())
+        return bool(session.query(Cargos).filter(Cargos.name == name , Cargos.guild_id ==guild_id).first())
+    except SQLAlchemyError as e:
+        logger.error(e)
+        return False
 
 #lista todos os cargos da guilda
 def cargos_list(guild_id):
-    return session.query(Cargos).filter(Cargos.guild_id == guild_id).all()
+    try:
+        return session.query(Cargos).filter(Cargos.guild_id == guild_id).all()
+    except SQLAlchemyError as e:
+        logger.error(e)
+        return False
 
 #salvar dados no banco de dados (objetos)
 def add_dados(mapper):
-    print(mapper)
     session.add(mapper)
-    session.commit()
+    try:
+        session.commit()
+    except SQLAlchemyError as e:
+        session.rollback()
+        logger.error(e)
+        return False
 #pegar objeto do banco de dados GUILD, MEMBRO, TAXA, CARGO, BLACKLIST
 def obter_dados(mapper, pk):
-    return session.query(mapper).get(pk)
+    try:
+        return session.query(mapper).get(pk)
+    except SQLAlchemyError as e:
+        logger.error(e)
+        return False
 
 def deletar_dados(mapper,pk):
     deletar = session.query(mapper).get(pk)
     session.delete(deletar)
-    session.commit()
+    try:
+        session.commit()
+    except SQLAlchemyError as e:
+        session.rollback()
+        logger.error(e)
+        return False
 
 
 ### admin
@@ -148,14 +206,18 @@ def remove_tax(id,nick):
         deletar_dados(Taxa,nick)
         return True
     else:
+        
         logging.warning(f"GUILD <{id}> Não registrada. Não foi possivel remover: {nick}")
         return False
 #checa player isention
 def check_isention(id,nick):
     if is_guild_reg(id):
-        return session.query(exists().where(
-            Members.name == "nick" 
-            and Members.isention == True)).scalar() 
+        try:
+            return session.query(exists().where(
+                Members.name == nick,  Members.isention == True)).scalar() 
+        except SQLAlchemyError as e:
+            logger.error(e)
+            return False
     else:
         logging.warning(f"GUILD <{id}> Não registrada")
         return False
@@ -171,7 +233,7 @@ def remove_isention(id,nick):
             except :
                 return False
         else:
-           logging.warning(f"GUILD <{id}> Não registrada")
+           logging.warning(f"Sem isenção")
            return False 
     else:
         logging.warning(f"GUILD <{id}> Não registrada")
@@ -188,9 +250,15 @@ def add_isention(id,nick):
             except :
                 return False
         else:
-           logging.warning(f"GUILD <{id}> Não registrada")
+           logging.warning(f"Sem isenção")
            return False 
     else:
         logging.warning(f"GUILD <{id}> Não registrada")
         return False    
 
+def generate_all_db():
+    Base.metadata.drop_all(engine)
+    Base.metadata.create_all(engine)
+    
+def update_db():
+    Base.metadata.update(engine)

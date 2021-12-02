@@ -1,41 +1,57 @@
+from datetime import time
 from logging import Logger
 from discord import player
+from discord.errors import HTTPException
 from .inits import *
 
 #obtem novos jogadores
 async def get_new_players_in_guild(guild):
-        logger.debug(f"Iniciando obtenção de novos players: {guild}")
+        logger.debug(f"Iniciando obtenção de novos players: {guild.name}")
         if guild.id_ao is not None or not "":
             members = await get_guild_members(guild.id_ao)
+            n_p  = 0
+            a_p = 0
+            new_players = []
             for p in members:
                 
                 p_name = p["Name"]
                 p_fame = p["KillFame"] +p["LifetimeStatistics"]["PvE"]["Total"]+ p["LifetimeStatistics"]["Crafting"]["Total"] + p["LifetimeStatistics"]["Gathering"]["All"]["Total"]
-                
-                if not is_player_exist(guild.id,p_name):
+
+                if not (p_name):
+
                     new_player = Members(
                         guild_id=guild.id,
                         name=p_name,
-                        fame = p_fame
+                        fame = p_fame,
+                        is_blacklist = False,
+                        is_cargo = False
                     )
                     session.add(new_player)
                     session.flush()
-                    new_player_tax = Taxa(name = p_name,
+                    new_player_tax = Taxa(
+                     name = p_name,
                      guild_id = guild.id, 
                      saldo = 0, 
                      deposito = 0,
                      ciclo = 0)
                     session.add(new_player_tax)
                     session.flush()
-                    logger.info(f"<{p_name}> adicionado")
+                    logger.debug(f"<{p_name}> adicionado")
+                    new_players.append(p_name)
+                    n_p += 1
                 else:
                     pl = obter_dados(Members,p_name)
-                    pl.fame = p_fame
-                    pl.guild_id = guild.id
-                    session.flush()
-                    logger.info(f"<{p_name}> atualizando fama: {p_fame}")
+                    print(pl)
+                    if bool(pl):
+                        pl.fame = p_fame
+                        pl.guild_id = guild.id
+                        pl.taxa.guild_id = guild.id
+                        session.flush()
+                    logger.debug(f"<{p_name}> atualizando fama: {p_fame}")
+                    a_p += 1
             session.commit()
-            logger.info("Processo de obtenção de players realizado")
+            logger.info(f"Processo de obtenção de players realizado. NOVOS: {n_p} ATUALIZADOS: {a_p}")
+            return new_players
         else:
             logger.debug(f"<{guild.name}> não pode verificar novos players devido a falta do ID DO ALBION. Tente atualizar com <?rg>")        
 
@@ -46,11 +62,20 @@ async def remove_players_in_guild(guild):
             members = await get_guild_members(guild.id_ao)
             db_memb = session.query(Members).filter_by(guild_id = guild.id).all()
             p_list = []
+            del_p = 0
+            del_players = []
             for p in members:
                 p_list.append(p["Name"])
             for memb in db_memb:
                 if memb.name not in p_list:
-                    deletar_dados(Members,memb.name)
+                    del_players.append(f"{memb.name} discord {memb.nick_discord}")
+                    del memb
+                    session.flush()
+                    del_p +=1
+                    
+            logger.info(F"Processo de delete de players realizado. DELETADO {del_p}")
+            session.commit()
+            return del_players
         else:
             logger.debug(f"<{guild.name}> não pode verificar novos players devido a falta do ID DO ALBION. Tente atualizar com <?rg>")        
 
@@ -175,7 +200,6 @@ class Admin(commands.Cog):
     async def guild_register(self, ctx, guildname="",language="english"):
         msg = init_json(cfg['msg_path'])
         tr = mudarLingua(language)
-        print(tr)
         if not tr:
             lista = "\n"
             for l  in GoogleTranslator().supported_languages:
@@ -195,19 +219,33 @@ class Admin(commands.Cog):
                 await ctx.channel.trigger_typing()
                 try:    
                     id_guild = await get_guild_id(guildname)
-                except:
+                except aiohttp.ContentTypeError as e:
                     id_guild = ""
+                    logger.error(e)
                     logger.error(msg["rg"]["fail-ao"].format(guildname))
                     await ctx.send(tr.translate(msg["rg"]["fail-ao"].format(guildname)))
 
                 await ctx.channel.trigger_typing()
                 logger.info(f"Registrando: {ctx.guild.id}")
-
+                if id_guild:
+                    try:
+                        guild = get_guild_info(id_guild)
+                    except aiohttp.ContentTypeError as e:
+                        guild = False
+                        logger.error(e)
+                # SALVA DADOS EM VARIAVEIS
+                if guild:
+                        id_ali = guild['AllianceId']
+                else:
+                    id_ali = ""
                 if is_guild_reg(ctx.guild.id):
+
                     result = obter_dados(Guild,ctx.guild.id)
                     result.name = guildname
                     session.flush()
                     result.id_ao = id_guild
+                    session.flush()
+                    result.id_ali = id_ali
                     session.flush()
                     result.lang = language
                     session.commit()
@@ -225,6 +263,7 @@ class Admin(commands.Cog):
                     new = Guild(
                         id = ctx.guild.id,
                         name = guildname,
+                        id_ali = id_ali,
                         id_ao = id_guild,
                         lang = language,
                         top = False,
@@ -275,16 +314,13 @@ class Admin(commands.Cog):
     #comando para cadastrar cargos(roles) ok
     @commands.command(name="rr", help="Requires prior registration. Add management positions")
     async def register_role(self,ctx, roles:str, language ="english"):
-        msg = init_json(cfg['msg_path'])
-        tr = mudarLingua(language)
-        if not tr:
-            await ctx.send(tr)
-            return
-        
         #        '''
         #        REGISTRA CARGO NO BOT
         #        DEVE TER PERMISSÃO     
         #        '''
+        msg = init_json(cfg['msg_path'])
+        tr = mudarLingua(language)
+
         idg = ctx.guild.id
         if is_guild_reg(idg):
             guildg = obter_dados(Guild,idg)
@@ -292,7 +328,7 @@ class Admin(commands.Cog):
                     await ctx.send("<DB Error> not get GUILD! Try it")
                     return
             tr = GoogleTranslator(source='auto', target=guildg.lang)
-            if is_guild_owner(ctx):
+            if has_roles(ctx):
                     if roles not in cargos_list(idg):
                         new = Cargos(
                             name = roles,
@@ -504,7 +540,7 @@ class Admin(commands.Cog):
                 logger.debug(f"<{g.name}> Não foi possivel encontrar canal")
                 
     #top pve
-    @tasks.loop(hours=12)
+    @tasks.loop(hours=24)
     async def players_top_pve(self):
             lang = "english"
             tr = mudarLingua(lang)
@@ -548,7 +584,7 @@ class Admin(commands.Cog):
 
     
     #top coletores
-    @tasks.loop(hours=12)
+    @tasks.loop(hours=24)
     async def players_top_g(self):
             lang = "english"
             tr = mudarLingua(lang)
@@ -594,45 +630,119 @@ class Admin(commands.Cog):
     
     #obtem gerencia jogaores
     @tasks.loop(hours=8)
-    async def gerencia_jogadores(self):    
-        list_guild_reg = session.query(Guild).filter(Guild.id_ao != "" or Guild.id_ao != None).all()
+    async def gerencia_jogadores(self):
+        tr = mudarLingua("english")
+        sttot = dt.now()    
+        list_guild_reg = session.query(Guild).filter(Guild.id_ao != "",Guild.id_ao != None).all()
         for guild in list_guild_reg:
+            st = dt.now()
             logger.info(f"Verificando removendo jogadores que sairam <{guild.name}>")
-            await remove_players_in_guild(guild)
+            saiu = await remove_players_in_guild(guild)
+            #print(saiu)
             logger.info(f"Verificando novos jogadores da guild <{guild.name}>")
-            await get_new_players_in_guild(guild)
-            logger.info(f"Sucess <{guild.name}>")
-        logger.info("Tarefa de gerenciamento de jogadores concluido!")
+            entrou = await get_new_players_in_guild(guild)
+            #print(entrou)
+            logger.info(f"({dt.now() - st}) Sucess <{guild.name}>")
+            #print(guild.canal_info)
+            if guild.canal_info:
+                tr = mudarLingua(guild.lang)   
+                try:
+                    channel = bot.get_channel(guild.canal_info)
+                except HTTPException as e:
+                    channel = False
+                    logger.error(e)
+                if channel:
+                    desc = ""
+                    for player in saiu:
+                         embed = discord.Embed(title= tr.translate("Jogadores que sairam da guild"), color=discord.Color.red())
+                         desc += f"{player} \n"
+                    embed.description = desc
+                    try:
+                        await channel.send(embed=embed)
+                    except HTTPException as e:
+                        channel = False
+                        logger.error(e)
+                    desc = ""
+
+                    for player in entrou:
+                         embed2 = discord.Embed(title= tr.translate("Jogadores que Entraram da guild"), color=discord.Color.gold())
+                         desc += f"{player} \n"
+                    embed2.description = desc
+                    try:
+                        await channel.send(embed=embed2)
+                    except HTTPException as e:
+                        channel = False
+                        logger.error(e)
+
+        logger.info(f"Tarefa de gerenciamento de jogadores concluido! ({dt.now() - sttot})")
         
-    '''
-    @tasks.loop(hours=12)
+
+    @tasks.loop(hours=24)
     async def players_top_pvp(self):
             
-            datag = init_json(guilds)
-            logger.info("Trabalhando para emitir top semanal pvp")
+            lang = "english"
+            tr = mudarLingua(lang)
+            datag = session.query(Guild).filter_by(top = True).all()
+            logger.info("Trabalhando para emitir top semanal PVP")
             for g in datag:
-                #print(f' Quantidade de servidores: {len(datag)}')
-                if "top" in datag[g]:
-                    client = discord.Client()
-                    channel = bot.get_channel(datag[f"{g}"]["canal_top"])
+                logger.info(f"Iniciando {g.name}")
+                lang = g.lang
+                tr = mudarLingua(lang)
+                if(g.canal_top is not None and g.id_ao is not None):
+                    print(f"{g.name} : {g.canal_top} > {g.id_ao}")
+
+                    try:
+                        channel = bot.get_channel(g.canal_top)
+                    except:
+                        logger.warning(f"Canal não localizado da guilda {g.name}")
+                    if not tr:
+                        await channel.send(tr)
+                        return
                     logger.info("Aguardando dados do Albion")
                     try:
-                        d = await self.get_guild_top_kills(datag[f"{g}"]["id"], tipo_ranking= 1)
-                        embed = discord.Embed(title= msg[datag[g]["lang"]]["title_pve"].format(datag[f"{g}"]["name"]), color=discord.Color.gold())
-                        for p in d:
-                            if d[p]["Fame"] >1000:
-                                embed.add_field(name= f'{p}º {d[p]["Name"]}', value=size(d[p]["Fame"],system=si), inline=False)
-                            else:
-                                embed.add_field(name= f'{p}º {d[p]["Name"]}', value=d[p]["Fame"], inline=False)
-                           
-                        embed.add_field(name=msg[datag[g]["lang"]]["more"], value=msg[datag[g]["lang"]]["footer"], inline=False)
-                        logger.info("Trabalho realizado com sucesso!")
-                        await channel.send(embed=embed)
-                    except:
-                        logger.error("Não foi possivel enviar informações do top ranking")
+                        tops = await get_guild_top_kills(g.id_ao)
+                    except aiohttp.ContentTypeError as e:
+                        tops = False
+                        logger.error(e)
+                        await channel.send(tr.translate("Não foi possivel obter TOP PVP - Não foi possivel comunicar com albion"))
+                    if tops:
+                        embed = discord.Embed(title= tr.translate(msg["title_pvp"].format(g.name)), color=discord.Color.gold())
+                        #aqui
+                        k = 0
+                        for kill in tops:
+                            k += 1
+                            if kill['TotalVictimKillFame']:
+                                totalFame = kill['TotalVictimKillFame']
+                            data = date_format(kill['TimeStamp'])
+                            killer = kill['Killer']['Name']
+                            vitima = kill['Victim']['Name']
+                            text = f"{k}º {killer} -  ☠️ {vitima}"
+                            
+                            text = tr.translate(text)
+                            try:
+                                if totalFame >1000:
+                                   totalFame =  size(totalFame, system=si)
+                            except:
+                                logger.debug(f"Não foi possivel converter o {totalFame}")
+                                
+                            val = f"{totalFame} Fama em {data}"
+
+                            if kill['numberOfParticipants']:
+                                assistencia = kill['numberOfParticipants']
+                                if assistencia > 0:
+                                    val += f" com {assistencia} assistências"
+                                
+                            embed.add_field(name= text , value=val, inline=False)
+                                
+                        embed.add_field(name=tr.translate(msg["more"]), value=tr.translate(msg["footer"]), inline=False)
+                        try:
+                            await channel.send(embed=embed)
+                        except:
+                            logger.error("Canal não existe")
+                    logger.info("Trabalho realizado!")
 
     #negativados - lista de devedores de taxas_fixas
-    
+    '''
     @tasks.loop(hours=6)
     async def negativados(self):
         #1 - verifica se TODOS os player tem contribuições (TAXA.JSON)
@@ -740,21 +850,24 @@ class Admin(commands.Cog):
             await ctx.send(tr.translate(msg["en-us"]["not-reg"]))
     
     #comando registra canal 
-    '''
+    
     @commands.command("rgi", help="Register channel for guild info transmission")
     async def registra_canal_guild_info(self,ctx):
+        lang = "english"
+        tr = mudarLingua(lang)
         if is_guild_reg(ctx.guild.id):
             datag = obter_dados(Guild,ctx.guild.id)
+            tr = mudarLingua(datag.lang)
             if has_roles(ctx):
                 datag.canal_info = ctx.channel.id
                 session.commit()
                 logger.info(f"({ctx.guild.id}) - Canal para transmitir info: {ctx.channel.name}")
                 await ctx.send(f"({ctx.guild.id}) - Canal para transmitir info: {ctx.channel.name}")
             else:
-                await ctx.send(tr.translate(msg["rg"]["is-owner"])
+                await ctx.send(tr.translate(msg["rg"]["is-owner"]))
         else:
-            await ctx.send(msg["en-us"]["not-reg"])
-    '''
+            await ctx.send(msg["not-reg"])
+    
     '''
         COMANDOS TASKS
     '''
@@ -784,6 +897,13 @@ class Admin(commands.Cog):
         logger.info("Iniciou tarefa de gerenciar players!") 
         await ctx.send(self.gerencia_jogadores.start())
 
+    @commands.command("stpvp", help= "Starts task of player for tick 12h")
+    @commands.is_owner()
+    async def start_process(self,ctx):
+        await ctx.send(self.players_top_pvp.start())
+        logger.info("Pronto")
+        
+        
     @commands.command("gpl", help = "list all players in guild")
     async def guild_players_list(self,ctx, lang = "english"):
         tr = mudarLingua(lang)
@@ -860,3 +980,14 @@ class Admin(commands.Cog):
             id= id_g
         deletar_dados(Guild,id)
         await ctx.send(tr.translate("sua guild foi removida"))
+        
+
+    @commands.command()
+    async def teste(self,ctx):
+        print(ctx.author)
+        print(type(ctx.author))
+        try:
+            await ctx.author.edit(nick = "LeTurn")
+        except HTTPException as e:
+            logger.error(e)
+        await ctx.send(type(ctx.author))

@@ -133,8 +133,7 @@ async def get_guild_data( guild_id):
             return await request(_url('/guilds/{guild_id}/data'.format(
                 guild_id=guild_id)))
 
-async def get_guild_top_kills( guild_id, offset=0, limit=11,
-                                _range='week'):
+async def get_guild_top_kills( guild_id, offset=0, limit=10,_range='week'):
             params = {}
             params['offset'] = offset
             params['limit'] = limit
@@ -295,5 +294,5 @@ async def get_battles( offset=0, limit=51, _range=None,
             return await request(_url('/battles'),
                                 params=params)
 
-async def get_weapon_categories(self):
+async def get_weapon_categories():
             return await request(_url('/items/_weaponCategories'))

@@ -47,7 +47,14 @@ sh.setFormatter(colorlog.ColoredFormatter('%(log_color)s [%(asctime)s] %(levelna
 logger.addHandler(fh)
 logger.addHandler(sh)
 
-
+def date_format(date):
+            data = date.split('-')
+            hour = data[2].split('T')
+            #print(hour)
+            hour = hour[1].split(':')
+            #print(hour)
+            return f"{data[2][:2]}/{data[1]}/{data[0]}  {hour[0]}:{hour[1]}"
+        
 def mudarLingua(lang):
     tr = GoogleTranslator()
     lang = [l for l in tr.supported_languages if l == lang]
@@ -67,14 +74,13 @@ def has_roles (ctx):
     rolesctx = ctx.author.roles
     roles = []
     for role in rolesctx:
-        roles.append(role.name)
+        if role.name != "None":
+            roles.append(role.name)
     if is_guild_reg(idg):
-        cargos = session.query(Cargos).filter_by(guild_id = idg).all()
-        lista_cargos = []
-        for cargo in cargos:
-            lista_cargos.append(cargo.name)
-        print(f"lista_cargos: \n {lista_cargos}")
-        if is_guild_owner(ctx) or (c in lista_cargos for c in roles):
+        for role in roles:
+            cargo = is_cargo(idg,role)
+            
+        if is_guild_owner(ctx) or cargo == True:
             return True
         else:
             return False

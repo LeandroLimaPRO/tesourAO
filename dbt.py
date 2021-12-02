@@ -11,7 +11,6 @@ async def on_ready():
     logger.info(f'{bot.user.name} conectou ao discord!\n')
     logger.info(f'\n')
     logger.warning(f'{len(bot.guilds)}')
-    
     for guild in list(bot.guilds):
         logger.debug(guild)
     atividade = random.choice(atividades)
@@ -21,6 +20,8 @@ async def on_ready():
           
         #for p in  print(member) g.members:
         #    pint(p.name)r
+
+        
 bot.add_cog(Tools(bot))
 bot.add_cog(Membro(bot))
 bot.add_cog(Admin(bot))
