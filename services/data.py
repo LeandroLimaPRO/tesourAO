@@ -64,9 +64,9 @@ class Members(Base):
     ref_discord = Column(BigInteger, comment="Id ou nome do discord player")
     nick_discord = Column(String)
     #relacões
-    taxa = relationship("Taxa", back_populates="members", cascade="all, delete, delete-orphan", uselist=False, passive_deletes=True)
-    blacklist = relationship("Blacklist", back_populates="members", cascade="all, delete, delete-orphan", uselist=False, passive_deletes=True)
-    guild = relationship("Guild", back_populates="members", cascade="all, delete, delete-orphan", uselist = False, single_parent=True)
+    taxa = relationship("Taxa", back_populates="members", cascade="all, delete, delete-orphan", uselist=False)
+    blacklist = relationship("Blacklist", back_populates="members", cascade="all, delete, delete-orphan", uselist=False)
+    guild = relationship("Guild", back_populates="members")
     def __repr__(self):
         return f"<Members(name='{self.name}'\n| taxa='{self.taxa} | blacklist='{self.blacklist})>"
 
@@ -77,9 +77,9 @@ class Taxa(Base):
     saldo = Column(Float)
     ciclo = Column(Float)
     guild_id = Column(BigInteger)
-    members = relationship("Members", back_populates="taxa", cascade="all, delete, delete-orphan",single_parent=True, uselist=False )
+    members = relationship("Members", back_populates="taxa")
     def __repr__(self):
-        return "<Taxa(name='%s' | deposito='%s'| saldo='%s' | ciclo='%s')>" % (self.name, self.deposito,  self.saldo, self.ciclo)
+        return "<Taxa(deposito='%s'| saldo='%s' | ciclo='%s')>" % (self.deposito,  self.saldo, self.ciclo)
 
 class Blacklist(Base):
     __tablename__ = 'blacklist'
@@ -88,7 +88,7 @@ class Blacklist(Base):
     reason = Column(String)
     police = Column(String)
     guild_id = Column(BigInteger)
-    members= relationship("Members",back_populates="blacklist", cascade="all, delete, delete-orphan", single_parent=True, uselist=False)
+    members= relationship("Members",back_populates="blacklist")
     def __repr__(self):
         return "<Blacklist(name='%s' | motivo='%s'| police='%s')>" % (self.name, self.reason, self.police)
 class Cargos(Base):
@@ -97,9 +97,9 @@ class Cargos(Base):
     name = Column(String)
     guild_id = Column(BigInteger, ForeignKey("guild.id", ondelete="CASCADE"))
     
-    guild = relationship("Guild",cascade="all, delete, delete-orphan",uselist=False, single_parent=True)
+    guild = relationship("Guild",back_populates="cargos")
     def __repr__(self):
-        return f"<Cargos({self.id}| {self.name}| {self.guild_id})>"
+        return f"<Cargos({self.id}| {self.name})>"
 
 #verifica se a guild foi registrada
 def is_guild_reg (id):

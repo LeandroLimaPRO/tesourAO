@@ -72,6 +72,7 @@ async def remove_players_in_guild(guild):
                     try:
                         session.delete(memb)
                     except SQLAlchemyError as e:
+                        session.rollback()
                         logger.error(e)
                     session.flush()
                     del_p +=1
@@ -708,32 +709,29 @@ class Admin(commands.Cog):
                         tops = False
                         logger.error(e)
                         await channel.send(tr.translate("Não foi possivel obter TOP PVP - Não foi possivel comunicar com albion"))
-                    if tops:
+                    if bool(tops):
                         embed = discord.Embed(title= tr.translate(msg["title_pvp"].format(g.name)), color=discord.Color.gold())
                         #aqui
                         k = 0
                         for kill in tops:
                             k += 1
-                            if kill['TotalVictimKillFame']:
+                            if isinstance(kill,dict):
                                 totalFame = kill['TotalVictimKillFame']
-                            data = date_format(kill['TimeStamp'])
-                            killer = kill['Killer']['Name']
-                            vitima = kill['Victim']['Name']
-                            text = f"{k}º {killer} -  ☠️ {vitima}"
-                            
-                            text = tr.translate(text)
-                            try:
                                 if totalFame >1000:
-                                   totalFame =  size(totalFame, system=si)
-                            except:
-                                logger.debug(f"Não foi possivel converter o {totalFame}")
+                                    totalFame =  size(totalFame, system=si)
+                                data = date_format(kill['TimeStamp'])
+                                killer = kill['Killer']['Name']
+                                vitima = kill['Victim']['Name']
+                                text = f"{k}º {killer} -  ☠️ {vitima}"
                                 
-                            val = f"{totalFame} Fama em {data}"
+                                text = tr.translate(text)
+                                    
+                                val = f"{totalFame} Fama em {data}"
 
-                            if kill['numberOfParticipants']:
-                                assistencia = kill['numberOfParticipants']
-                                if assistencia > 0:
-                                    val += f" com {assistencia} assistências"
+                                if kill['numberOfParticipants']:
+                                    assistencia = kill['numberOfParticipants']
+                                    if assistencia > 0:
+                                        val += f" com {assistencia} assistências"
                                 
                             embed.add_field(name= text , value=val, inline=False)
                                 
