@@ -46,11 +46,12 @@ class Guild(Base):
     fame_taxa = Column(Integer, comment="taxa de c")
     members = relationship("Members", back_populates='guild',cascade="all, delete, delete-orphan", passive_deletes=True)
     cargos = relationship("Cargos", back_populates='guild', cascade="all, delete, delete-orphan", passive_deletes=True)
+    blacklist = relationship("Blacklist", back_populates="guild", cascade="all, delete, delete-orphan", uselist=False)
     #field_data = relationship('members', backref="guild", uselist=False)
     ##relação
 
     def __repr__(self):
-       return f"<Guild(id='{self.id}' |  name='{self.name}' | lang='{self.lang}' | members='{self.members}')>"
+       return f"<Guild(id='{self.id}' |  name='{self.name}' | lang='{self.lang}' | members='{len(self.members)}' | blacklist= '{len(self.blacklist)}')>"
 
 class Members(Base):
     __tablename__ = 'members'
@@ -65,10 +66,9 @@ class Members(Base):
     nick_discord = Column(String)
     #relacões
     taxa = relationship("Taxa", back_populates="members", cascade="all, delete, delete-orphan", uselist=False)
-    blacklist = relationship("Blacklist", back_populates="members", cascade="all, delete, delete-orphan", uselist=False)
     guild = relationship("Guild", back_populates="members")
     def __repr__(self):
-        return f"<Members(name='{self.name}'\n| taxa='{self.taxa} | blacklist='{self.blacklist})>"
+        return f"<Members(name='{self.name}'\n| taxa='{self.taxa} | blacklist='{self.is_blacklist})>"
 
 class Taxa(Base):
     __tablename__ = 'taxa'
@@ -84,11 +84,11 @@ class Taxa(Base):
 class Blacklist(Base):
     __tablename__ = 'blacklist'
     id = Column(Integer, primary_key=True)
-    name = Column(String, ForeignKey("members.name", ondelete="CASCADE"))
+    name = Column(String)
     reason = Column(String)
     police = Column(String)
-    guild_id = Column(BigInteger)
-    members= relationship("Members",back_populates="blacklist")
+    guild_id = Column(BigInteger, ForeignKey("guild.id", ondelete="CASCADE"))
+    guild= relationship("Guild",back_populates="blacklist")
     def __repr__(self):
         return "<Blacklist(name='%s' | motivo='%s'| police='%s')>" % (self.name, self.reason, self.police)
 class Cargos(Base):

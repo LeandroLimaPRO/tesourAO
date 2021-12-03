@@ -165,31 +165,21 @@ class Admin(commands.Cog):
             lang = g.lang
         mdb = init_json(cfg['msg_path'])
         tr = mudarLingua(lang)
-        if not tr:
-            await ctx.send(tr)
-            return
-        for ml in  mdb['tutorial']:
-            #for m in ml:
-                embed = discord.Embed(title=tr.translate(ml.get('title')),color=discord.Color.dark_green())
-                ms = ""
-                if ml.get('command'):
-                    ms += tr.translate(ml.get('command')) + "\n"
-                
-                ms += tr.translate(ml.get('desc')) + "\n"
-                embed.description = ms
+        for info in mdb['tutorial']:
+            embed = discord.Embed(title=tr.translate(info.get('title')),color=discord.Color.dark_green())
+            embed.description = tr.translate(info.get('desc'))
+            if info.get("commands"):
+                coms = info.get("commands")
+                for com in coms:
+                    link =""
+                    if com.get('u'):
+                        link = " [Click-me](" + str(com.get('u')) + ")"
+                    ms = tr.translate(str(com.get('i'))) + link
+                    #print(ms)
+                    embed.add_field(name=tr.translate(com.get('c')), value=ms, inline=False)
+                    embed.video.url = com.get('u')
 
-                if ml.get('commands'):
-
-                    for com in ml['commands']:
-                        embed = discord.Embed(title=tr.translate(com.get('c')),color=discord.Color.dark_green())
-                        ms = ""
-                        ms += str(tr.translate(com.get("d"))) + "\n"
-                        ms += str(com.get("u"))
-                        embed.description = ms
-
-                        await ctx.send(embed=embed)
-                else:
-                    await ctx.send(embed=embed)
+            await ctx.send(embed=embed)
                         
     @commands.command(name="list_language")
     async def lista_liguagens(self,ctx):
@@ -648,35 +638,36 @@ class Admin(commands.Cog):
             #print(entrou)
             logger.info(f"({dt.now() - st}) Sucess <{guild.name}>")
             #print(guild.canal_info)
-            if guild.canal_info:
-                tr = mudarLingua(guild.lang)   
-                try:
-                    channel = bot.get_channel(guild.canal_info)
-                except HTTPException as e:
-                    channel = False
-                    logger.error(e)
-                if channel:
-                    desc = ""
-                    embed = discord.Embed(title= tr.translate("Jogadores que sairam da guild"), color=discord.Color.red())
-                    for player in saiu:
-                         desc += f"{player} \n"
-                    embed.description = desc
+            if saiu or entrou:
+                if guild.canal_info:
+                    tr = mudarLingua(guild.lang)   
                     try:
-                        await channel.send(embed=embed)
+                        channel = bot.get_channel(guild.canal_info)
                     except HTTPException as e:
                         channel = False
                         logger.error(e)
-                    desc = ""
-                    del embed
-                    embed = discord.Embed(title= tr.translate("Jogadores que Entraram da guild"), color=discord.Color.gold())
-                    for player in entrou:
-                         desc += f"{player} \n"
-                    embed.description = desc
-                    try:
-                        await channel.send(embed=embed)
-                    except HTTPException as e:
-                        channel = False
-                        logger.error(e)
+                    if channel:
+                        desc = ""
+                        embed = discord.Embed(title= tr.translate("Jogadores que sairam da guild"), color=discord.Color.red())
+                        for player in saiu:
+                            desc += f"{player} \n"
+                        embed.description = desc
+                        try:
+                            await channel.send(embed=embed)
+                        except HTTPException as e:
+                            channel = False
+                            logger.error(e)
+                        desc = ""
+                        del embed
+                        embed = discord.Embed(title= tr.translate("Jogadores que Entraram da guild"), color=discord.Color.gold())
+                        for player in entrou:
+                            desc += f"{player} \n"
+                        embed.description = desc
+                        try:
+                            await channel.send(embed=embed)
+                        except HTTPException as e:
+                            channel = False
+                            logger.error(e)
 
         logger.info(f"Tarefa de gerenciamento de jogadores concluido! ({dt.now() - sttot})")
         
