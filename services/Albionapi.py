@@ -123,7 +123,9 @@ async def get_player_death( player_id):
 
 async def get_guild_id( guild_name):
             guild = await search(guild_name)
-            return guild['guilds'][0]['Id']
+            if len(guild) > 0:
+                return guild['guilds'][0]['Id']
+            return False
        
 async def get_guild_info( guild_id):
             return await request(_url(

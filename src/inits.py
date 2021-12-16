@@ -23,7 +23,7 @@ import requests
 import pandas as pd
 import asyncio
 # data ultls
-
+intents = discord.Intents.all()
 #role_file = cfg["role_file"] #[path] cargos de cada discord registrados
 #guilds = cfg["data_guild"] #[path] configração de cada discord
 #bldb = cfg["blacklist"] #[path] banco de blacklist por discord
@@ -31,7 +31,7 @@ import asyncio
 prefix = cfg["prefix"]  # prefixo do bot
 #datag = init_json(guilds) # dados de configuração de cada discord
 atividades= cfg["atividades"] #lista de atividades "customizadas"
-bot = commands.Bot(command_prefix=prefix) #pré-inicialização com atribuição do prefixo
+bot = commands.Bot(command_prefix=prefix, intents=intents) #pré-inicialização com atribuição do prefixo
 #ao = Ao() #objeto de requisições do servidor do albion
 
 fot = "Bot by: [@LeandroLimaPRO#0227](https://discord.gg/qSjPnBfZW3)\n[Contribua](https://bityli.com/l4KVV) para manter o bot marocando." #footer dos embeds de cada mensagem do bot
@@ -86,3 +86,13 @@ def has_roles (ctx):
             return False
     else:
         return False
+
+
+def search_member(member, search):
+    result = False
+    player = member.nick
+    if not bool(player):
+        player = member.name
+    if bool(player.count(search)):
+            return member
+    return result

@@ -1,7 +1,7 @@
 from discord.errors import HTTPException
 from .inits import *
 
-class Blaclist_member(commands.Cog):
+class Blacklist_member(commands.Cog, name = "Blacklist"):
     
     #comando blacklista players
     @commands.command("b", help="blacklista player")
@@ -9,7 +9,7 @@ class Blaclist_member(commands.Cog):
         tr = mudarLingua(lang)
         fot = "\n" + tr.translate(tr.translate(msg["footer"]))
 
-        if has_roles(ctx) or is_guild_owner(ctx):
+        if has_roles(ctx):
             if is_guild_reg(ctx.guild.id):
                 datag = obter_dados(Guild,ctx.guild.id)
                 lang = datag.lang
@@ -25,7 +25,8 @@ class Blaclist_member(commands.Cog):
                 else:
                     await ctx.send(tr.translate("O canal de blacklist não foi cadastrado. Por favor use o comando *?rb* no canal desejado"))
                     return 0
-                if not is_blacklisted_from_guild(ctx.guild.id,player):
+                memb_blacklist = is_blacklisted_from_guild(ctx.guild.id,player)
+                if not bool(memb_blacklist):
                     try:
                         memb = obter_dados(Members,player)
                     except SQLAlchemyError as e:
@@ -35,12 +36,29 @@ class Blaclist_member(commands.Cog):
                     if memb:
                         memb.is_blacklist = True
                         session.flush()
+                        #ban discord
+                        if bool(memb.ref_discord):
+                            try:
+                                dsguild = bot.get_guild(datag.id)
+                            except HTTPException as e:
+                                dsguild = False
+                                logger.error(e)
+                            if bool(dsguild):
+                                dsmember = dsguild.get_member(memb.ref_discord)
+                                if bool(dsmember):
+                                    try:
+                                        await dsmember.edit(roles=[], reason="Exit from guild albion")
+                                    except HTTPException as e:
+                                        logger.error(e)
+                                    try:
+                                        await dsmember.ban(reason=reason)
+                                    except HTTPException as e:
+                                        logger.error(e)
                     data = Blacklist(name=player, 
                                     reason=reason,
                                     police=ctx.author.nick, 
                                     guild_id=ctx.guild.id
-                                    )
-                    print(data)
+                    )
                     try:
                         add_dados(data)
                     except SQLAlchemyError as e:
@@ -54,7 +72,7 @@ class Blaclist_member(commands.Cog):
                     try:
                         #logger.info("tentando enviar msg")
                         await channel.send(embed=embed)
-                        await ctx.send(embed=embed)
+                        #await ctx.send(embed=embed)
                     except:
                         logger.debug("Não foi possivel enviar msg")
                 else:
@@ -79,13 +97,14 @@ class Blaclist_member(commands.Cog):
                     fot = "\n" + tr.translate(msg["footer"])
                     await ctx.send(tr.translate(msg["blacklist"]["not-reg"]) + fot)
                     return
-                if is_blacklisted_from_guild(ctx.guild.id,player):
+                memb_bl = is_blacklisted_from_guild(ctx.guild.id,player)
+                if memb_bl:
                     memb = obter_dados(Members,player)
                     if memb:
                         memb.is_blacklist = False
                         session.flush()
-                        memb_bl = session.query(Blacklist).filter(Blacklist.guild_id==datag.id,Blacklist.name==memb.name).first()
-                        session.delete(memb_bl)
+                        if memb_bl:
+                            session.delete(memb_bl)
                         session.commit()
                     embed= discord.Embed(title= tr.translate(msg["blacklist"]["title-r"]), color=discord.Color.blue())
                     embed.add_field(name="Player", value=player)
@@ -105,16 +124,16 @@ class Blaclist_member(commands.Cog):
     async def check_blacklist(self, ctx, player:str, lang="english"):
         tr = mudarLingua(lang)
         fot = "\n" + tr.translate(msg["footer"])
-        if has_roles(ctx) or is_guild_owner(ctx):
+        if has_roles(ctx):
             if is_guild_reg(ctx.guild.id):
                 datag = obter_dados(Guild,ctx.guild.id)
                 tr = mudarLingua(datag.lang)
                 fot = "\n" + tr.translate(msg["footer"])
-                if is_blacklisted_from_guild(ctx.guild.id,player):
-                    data = obter_dados(Blacklist,player)
+                memb_bl = is_blacklisted_from_guild(ctx.guild.id,player)
+                if memb_bl:
                     embed= discord.Embed(title= "BlackListed", color=discord.Color.dark_red())
-                    embed.add_field(name=tr.translate("Player"), value=data.name)
-                    embed.add_field(name=tr.translate("Reason"), value=data.reason)
+                    embed.add_field(name=tr.translate("Player"), value=memb_bl.name)
+                    embed.add_field(name=tr.translate("Reason"), value=memb_bl.reason)
                     embed.add_field(name= tr.translate(msg["more"]), value=tr.translate(msg["footer"]), inline=False)
                     #logger.info(f"Blacklist *{player}* motivo: *{datareason}*")    
                     await ctx.send(embed=embed)

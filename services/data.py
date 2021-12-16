@@ -142,18 +142,17 @@ def is_tax_exist(nick_player):
         logger.error(e)
         return False
 #verifica se o player está blacklistado
-def is_blacklisted_from_guild(guild_id, nick_player):  
+def is_blacklisted_from_guild(guild_id, nick_player):
+        re = False  
         try:
-            re = session.query(Members).filter(Members.name == nick_player , Members.guild_id == guild_id , Members.is_blacklist==True).first()
+            re = session.query(Blacklist).filter(Blacklist.name == nick_player , Blacklist.guild_id == guild_id).first()
             '''re = session.query(exists().where(
             Members.name == nick_player
             and Members.guild_id == guild_id
             and Members.is_blacklist == True)).first() '''#retorna bool se existir
-            print(re)
-            return bool(re)
         except SQLAlchemyError as e:
             logger.error(e)
-            return False
+        return re
 #verifica se existe o cargo
 def is_cargo(guild_id, name):
     try:

@@ -1,6 +1,6 @@
 
 from src.inits import *
-from src.Blacklistds import Blaclist_member
+from src.Blacklistds import Blacklist_member
 from src.Adminds import Admin
 from src.Toolsds import Tools
 from src.Membrods import Membro
@@ -27,5 +27,5 @@ async def on_ready():
 bot.add_cog(Tools(bot))
 bot.add_cog(Membro(bot))
 bot.add_cog(Admin(bot))
-bot.add_cog(Blaclist_member(bot))
+bot.add_cog(Blacklist_member(bot))
 bot.run(TOKEN)
