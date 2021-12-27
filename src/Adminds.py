@@ -1,3 +1,4 @@
+from asyncio.events import new_event_loop, set_event_loop
 from datetime import time
 from logging import Logger
 from discord import player
@@ -11,14 +12,16 @@ class Admin(commands.Cog):
         METODOS PRIVATIVOS
     '''
     #obtem novos jogadores
-    async def get_new_players_in_guild(self, guild):
+    async def get_new_players_in_guild(self, guild, members = None):
         logger.info(f"OBTENÇÃO: {guild.name}")
         if guild.id_ao is not None or not "":
-            try:
-                members = await get_guild_members(guild.id_ao)
-            except aiohttp.ContentTypeError as e:
-                logger.error(e)
-                members = False
+            if members == None:
+                logger.info("Tentando obter dados novamente")
+                try:
+                    members = await get_guild_members(guild.id_ao)
+                except aiohttp.ContentTypeError as e:
+                    logger.error(e)
+                    members = False
             n_p  = 0
             a_p = 0
             new_players = []
@@ -36,12 +39,12 @@ class Admin(commands.Cog):
                         nick_discord = dsPlayer.nick
 
                     #registra - NOVO
-                    if not is_player_exist_on_guild(guild.id, p_name):
+                    if not is_player_exist(p_name):
                         
                         new_player = Members(
                             guild_id=guild.id,
                             name=p_name,
-                            fame = p_fame,
+                            fame = int(p_fame),
                             is_blacklist = False,
                             is_cargo = False,
                             ref_discord = ref_discord,
@@ -70,7 +73,7 @@ class Admin(commands.Cog):
                         pl = obter_dados(Members,p_name)
                         #print(pl)
                         if bool(pl):
-                            pl.fame = p_fame
+                            pl.fame = int(p_fame)
                             pl.guild_id = guild.id
                             pl.taxa.guild_id = guild.id
                             pl.ref_discord = ref_discord
@@ -91,24 +94,30 @@ class Admin(commands.Cog):
             return False   
 
     #obtem novos jogadores
-    async def remove_players_in_guild(self, guild):
+    async def remove_players_in_guild(self, guild, members = None):
         #db_memb = session.query(Members).filter_by(guild_id = guild_id)
         logger.info("REMOVE")
         if guild.id_ao is not None or not "":
-            try:
-                members = await get_guild_members(guild.id_ao)
-            except aiohttp.ContentTypeError as e:
-                logger.error(e)
-                members = None
+            #print(members)
+            if members == None:
+                try:
+                    members = await get_guild_members(guild.id_ao)
+                except aiohttp.ContentTypeError as e:
+                    logger.error(e)
+                    members = None
             logger.info(f"Verificando...")
             db_memb = session.query(Members).filter_by(guild_id = guild.id).all()
+            logger.warning(f"CONTAGENS: DB: {len(db_memb)} :: API:{len(members)}")
             p_list = []
             del_p = 0
             del_players = []
             if members:
+
                 for p in members:
                     p_list.append(p["Name"])
+ 
                 for memb in db_memb:
+
                     if memb.name not in p_list:
                         if bool(memb.ref_discord):
                             try:
@@ -127,6 +136,7 @@ class Admin(commands.Cog):
                         if memb.ref_discord:
                             msg += f"- Discord <@{memb.ref_discord}>"
                         del_players.append(msg)
+
                         try:
                             session.delete(memb)
                         except SQLAlchemyError as e:
@@ -134,10 +144,10 @@ class Admin(commands.Cog):
                             logger.error(e)
                         session.flush()
                         del_p +=1
-                        
-                    logger.info(F"Processo de delete de players realizado. DELETADO {del_p}")
-                    session.commit()
-                    return del_players
+                           
+                logger.info(F"Processo de delete de players realizado. DELETADO {del_p}")
+                session.commit()
+                return del_players
             else:
                 logger.warning(F"Não foi possibel obter membros")
         else:
@@ -677,18 +687,32 @@ class Admin(commands.Cog):
     async def gerencia_jogadores(self):
         tr = mudarLingua("english")
         sttot = dt.now()    
-        list_guild_reg = session.query(Guild).filter(Guild.id_ao != "",Guild.id_ao != None).all()
+        list_guild_reg = session.query(Guild).filter(Guild.id_ao != None).all()
         total = len(list_guild_reg)
         num = 0
         for guild in list_guild_reg:
             num += 1
             st = dt.now()
             logger.info(f"{num}/{total} - Removendo jogadores que sairam <{guild.name}>")
-            saiu = await self.remove_players_in_guild(guild)
-            #print(saiu)
+            tentativa = 0
+            encontrou = False
+            logger.info("Tentando encontrar registros no albion: ")
+            while tentativa <= 5 and encontrou == False:
+                tentativa += 1
+                logger.info(f"T {tentativa}/5")
+                try:
+                    members = await get_guild_members(guild.id_ao)
+                except aiohttp.ContentTypeError as e:
+                    logger.error(e)
+                    members = False
+                if members:
+                    logger.info(f"Emcontrou registros: {len(members)} na tentativa {tentativa}")
+                    encontrou = True
+                if tentativa == 5:
+                    logger.warning("Não foi possivel encontrar registros")
+            saiu = await self.remove_players_in_guild(guild, members)
             logger.info(f"Verificando novos jogadores da guild <{guild.name}>")
-            entrou = await self.get_new_players_in_guild(guild)
-            #print(entrou)
+            entrou = await self.get_new_players_in_guild(guild, members)
             logger.info(f"({dt.now() - st}) Sucess <{guild.name}>")
             #print(guild.canal_info)
             if guild.canal_info:
@@ -954,33 +978,44 @@ class Admin(commands.Cog):
     @commands.command("gpl", help = "list all players in guild")
     async def guild_players_list(self,ctx, lang = "english"):
         tr = mudarLingua(lang)
-        if not tr:
-            await ctx.send(tr)
-            return
         if is_guild_reg(ctx.guild.id):
             guild = obter_dados(Guild,ctx.guild.id)
             lang = guild.lang
             tr = mudarLingua(lang)
-            if not tr:
-                await ctx.send(tr)
-                return
             players = guild.members
             #print(players)
             if not players:
-                #print(ctx.guild.id)
-                players = session.query(Members).filter_by(guild_id = 827945906175082526).all()
+                #print(
+                players = session.query(Members).filter_by(guild_id = ctx.guild.id).all()
                 #print(players)
             if not players:
                 await ctx.send(tr.translate("Your guild has no players, or has not been registered in our junk"))
             else:
                 msg = ""
+                msg2 = ""
                 count = len(players)
                 embed = discord.Embed(title= tr.translate(f"Players({count}) List"), color=discord.Color.gold())
                 #print(count)
+                c =0
                 for p in players:
-                    msg += f"{p.name} \n"
-                embed.description =  msg
-                await ctx.send(embed=embed)
+  
+                    if c <= 150:
+                        msg += f"{p.name}"
+                        if p.ref_discord:
+                            msg += f"<@{p.ref_discord}>"
+                        msg += "\n"
+                        if c == 150:
+                            embed.description =  msg
+                            await ctx.send(embed=embed)
+                    else:
+                        msg2 += f"{p.name}"
+                        if p.ref_discord:
+                            msg2 += f"<@{p.ref_discord}>"
+                        msg2 += "\n"
+                        if c >= count:
+                            embed.description =  msg
+                            await ctx.send(embed=embed)
+                    c+=1
             logger.info("Fim de busca - players")
         else:
             await ctx.send(tr.translate("Sua guild não foi encontrada nos meus bagulhos"))
@@ -1031,20 +1066,65 @@ class Admin(commands.Cog):
 
     @commands.command()
     @commands.is_owner()
-    async def teste(self,ctx, norm = False):
-        g =  obter_dados(Guild, ctx.guild.id)
-        print("trabalhando")
-        if norm:
-            retorno = await self.get_new_players_in_guild(g)
+    async def teste(self,ctx):
+        guild = obter_dados(Guild,ctx.guild.id)
+        logger.info(f"INICIANDO")
+        st = dt.now()
+        tentativa = 0
+        encontrou = False
+        logger.info("Tentando encontrar registros no albion: ")
+        while tentativa <= 5 and encontrou == False:
+            tentativa += 1
+            logger.info(f"T {tentativa}/5")
+            try:
+                members = await get_guild_members(guild.id_ao)
+            except aiohttp.ContentTypeError as e:
+                logger.error(e)
+                members = False
+            if members:
+                logger.info(f"Emcontrou registros: {len(members)} na tentativa {tentativa}")
+                encontrou = True
+            if tentativa == 5:
+                logger.warning("Não foi possivel encontrar registros")
+        saiu = await self.remove_players_in_guild(guild, members)
+        print(saiu)
+        logger.info(f"Verificando novos jogadores da guild <{guild.name}>")
+        entrou = await self.get_new_players_in_guild(guild, members)
+        print(entrou)
+        logger.info(f"({dt.now() - st}) Sucess <{guild.name}>")
+        #print(guild.canal_info)
+        if guild.canal_info:
+            tr = mudarLingua(guild.lang)  
+            try:
+                channel = bot.get_channel(guild.canal_info)
+            except HTTPException as e:
+                channel = None
+                logger.error(e)
+            if channel:
+                if saiu:
+                    desc = ""
+                    embed = discord.Embed(title= tr.translate("Jogadores que sairam da guild"), color=discord.Color.red())
+                    for player in saiu:
+                        desc += f"{player} \n"
+                    embed.description = desc
+                    try:
+                        await channel.send(embed=embed)
+                    except HTTPException as e:
+                        logger.error(e)
+                if entrou:
+                    desc = ""
+                    embed = discord.Embed(title= tr.translate("Jogadores que Entraram da guild"), color=discord.Color.gold())
+                    for player in entrou:
+                        desc += f"{player} \n"
+                    embed.description = desc
+                    try:
+                        await channel.send(embed=embed)
+                    except HTTPException as e:
+                        logger.error(e)
         else:
-            print("Del")
-            retorno = await self.remove_players_in_guild(g)
-        txt = ""
-        for p in retorno:
-            txt += f"{p} \n"
+            logger.info(f"<{guild.name}> não possui canal info registrado")
+ 
     
-        await ctx.send(txt)    
-        
         
     def members_ds(self, g, player):
         dsg = bot.get_guild(g.id)

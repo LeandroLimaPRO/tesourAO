@@ -15,15 +15,13 @@ async def request (url, params=None):
             async with aiohttp.ClientSession() as session:
                 async with session.get(url, params=params) as resp:
                     j_ = await resp.json()
-                    logger.info(f"{dt.now() - st}s")
-                    logger.debug(f"{dt.now() - st}s Resposta(Params): \n {j_}")
+                    logger.info(f"{dt.now() - st}s Resposta(Params): \n {len(j_)}")
                     return j_
         else:
             async with aiohttp.ClientSession() as session:
                 async with session.get(url) as resp:
                     j_ = await resp.json()
-                    logger.info(f"{dt.now() - st}s")
-                    logger.debug(f"{dt.now() - st}s Resposta(Params): \n {j_}")
+                    logger.info(f"{dt.now() - st}s Resposta(Params): \n {len(j_)}")
                     return j_
 async def get_statistics_guild( guild_id:str,range= 0, types=0, subtype=0, region=0, limit = 0):
         '''	
