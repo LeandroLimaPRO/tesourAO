@@ -36,9 +36,9 @@ bot = commands.Bot(command_prefix=prefix, intents=intents) #pré-inicialização
 
 fot = "Bot by: [@LeandroLimaPRO#0227](https://discord.gg/qSjPnBfZW3)\n[Contribua](https://bityli.com/l4KVV) para manter o bot marocando." #footer dos embeds de cada mensagem do bot
 
-logger = logging.getLogger('') # obtem todos os loggers ativos
+logger = logging.getLogger('') # obtem todos os loggers ativos  -> em outros arquivos chamar logger = logging.getLogger(__name__) 
 logger.setLevel(logging.INFO) #seta nivel de logger 
-fh = logging.FileHandler(f"debug{random.randint(0,10000)}.log",encoding="utf-8")# Cria arquivo de logger
+fh = logging.FileHandler(f"debug{random.randint(0,10000)}.log",encoding="utf-8")# Cria arquivo de logger (NOME)
 sh = logging.StreamHandler(sys.stdout) # atribui cmd como ouvinte dos loggers
 #configura formato de logger
 formatter = logging.Formatter('[%(asctime)s] %(levelname)s [%(filename)s.%(funcName)s:%(lineno)d] %(message)s', datefmt='%d %b %Y %H:%M:%S')

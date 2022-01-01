@@ -43,7 +43,7 @@ def rguild(id,id_albion, name_guild:str, lang="pt-br", taxa=10):
       #except:
        # print("error!")
        # return False
-def read_txt (file_in, tipo = 0):
+def read_banco_txt (file_in, tipo = 0):
     d = pd.read_csv(file_in,encoding="utf-8")
     if tipo == 0:
         motivo = "Depósito"

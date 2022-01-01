@@ -111,14 +111,15 @@ def is_guild_reg (id):
 #verifica se a guilda tem sistema taxa de prata ativa
 def is_tax_silver_system(id):
     try:
-        return bool(session.query(exists().where(Guild.id == id , Guild.taxap_s ==True)).scalar()) #retorna bool se existir
+        
+        return bool(session.query(Guild).filter(Guild.id == id, Guild.taxap_s == True).first()) #retorna bool se existir
     except SQLAlchemyError as e:
         logger.error(e)
         return False
 #verifica se a guilda tem sistema de taxa de coleta ativa
 def is_tax_grather_system(id):
     try:
-        return bool(session.query(exists().where(Guild.id == id , Guild.taxac_s ==True)).scalar())
+        return bool(session.query(Guild).filter(Guild.id == id, Guild.taxac_s == True).first())
     except SQLAlchemyError as e:
         logger.error(e)
         return False
@@ -212,8 +213,7 @@ def remove_tax(id,nick):
 def check_isention(id,nick):
     if is_guild_reg(id):
         try:
-            return session.query(exists().where(
-                Members.name == nick,  Members.isention == True)).scalar() 
+            return bool(session.query(Members).filter(Members.name == nick , Members.isention ==True).first())
         except SQLAlchemyError as e:
             logger.error(e)
             return False

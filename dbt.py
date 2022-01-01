@@ -2,7 +2,7 @@
 from src.inits import *
 from src.Blacklistds import Blacklist_member
 from src.Adminds import Admin
-from src.Toolsds import Tools
+from src.Toolsds import TaxaD
 from src.Membrods import Membro
 from discord.client import Client
 from discord.member import Member
@@ -24,7 +24,7 @@ async def on_ready():
         #    pint(p.name)r
 
         
-bot.add_cog(Tools(bot))
+bot.add_cog(TaxaD(bot))
 bot.add_cog(Membro(bot))
 bot.add_cog(Admin(bot))
 bot.add_cog(Blacklist_member(bot))

@@ -1,7 +1,9 @@
 from asyncio.events import new_event_loop, set_event_loop
 from datetime import time
 from logging import Logger
-from discord import player
+
+from sqlalchemy.sql.elements import or_
+from discord import embeds, player
 from discord.errors import HTTPException
 from .inits import *
 
@@ -29,7 +31,7 @@ class Admin(commands.Cog):
                 for p in members:
                     
                     p_name = p["Name"]
-                    p_fame = p["KillFame"] +p["LifetimeStatistics"]["PvE"]["Total"]+ p["LifetimeStatistics"]["Crafting"]["Total"] + p["LifetimeStatistics"]["Gathering"]["All"]["Total"]
+                    p_fame = int(p["KillFame"]) +int(p["LifetimeStatistics"]["PvE"]["Total"])+ int(p["LifetimeStatistics"]["Crafting"]["Total"]) + int(p["LifetimeStatistics"]["Gathering"]["All"]["Total"])
                     #pesquisa no discord
                     dsPlayer = self.members_ds(guild,p_name)
                     nick_discord = None
@@ -241,7 +243,7 @@ class Admin(commands.Cog):
                     #print(ms)
                     embed.add_field(name=tr.translate(com.get('c')), value=ms, inline=False)
                     embed.video.url = com.get('u')
-
+            embed.add_field(name=tr.translate("Mais"), value = tr.translate(mdb['footer']))
             await ctx.send(embed=embed)
                         
     @commands.command(name="list_language")
@@ -266,6 +268,8 @@ class Admin(commands.Cog):
             await ctx.send(f"Is language not available. please try another language: {lista}")
             return 0
         else:
+            embed = discord.Embed(title=tr.translate(msg['rg']['title']),color=discord.Color.dark_green())
+            embed.add_field(name=tr.translate("Mais"), value = tr.translate(msg['footer']))
             await ctx.channel.trigger_typing()
             logger.info(f"#Registrando Guilda {bool(is_guild_owner(ctx))}")
             if is_guild_owner(ctx):
@@ -280,7 +284,9 @@ class Admin(commands.Cog):
                     id_guild = None
                     logger.error(e)
                     logger.error(msg["rg"]["fail-ao"].format(guildname))
-                    await ctx.send(tr.translate(msg["rg"]["fail-ao"].format(guildname)))
+                    embed.description = tr.translate(msg["rg"]["fail-ao"].format(guildname))
+                    embed.color = discord.Color.red()
+                    await ctx.send(embeds=embed)
 
                 await ctx.channel.trigger_typing()
                 logger.info(f"Registrando: {ctx.guild.id}")
@@ -305,9 +311,10 @@ class Admin(commands.Cog):
                     session.flush()
                     result.lang = language
                     session.commit()
-                    
-                    await ctx.send(tr.translate(msg["rg"]["players"]["search"].format(result.id_ao)))
-                    await ctx.send(tr.translate(msg["rg"]["updated"].format(guildname)))
+                    embed.description = tr.translate(msg["rg"]["players"]["search"].format(result.id_ao)) + "\n" + tr.translate(msg["rg"]["updated"].format(guildname))
+                    embed.add_field(name=tr.translate(msg['more']),value = tr.translate(msg['footer']))
+                    embed.color = discord.Color.blue()                   
+                    await ctx.send(embed = embed)
                 else:
                     new = Guild(
                         id = ctx.guild.id,
@@ -323,24 +330,44 @@ class Admin(commands.Cog):
                     try:
                         add_dados(new)
                     except:
-                        await ctx.send(tr.translate(msg["rg"]["fail"].format(guildname)) + ctx.author.mention)
+                        embed.description = tr.translate(msg["rg"]["fail"].format(guildname)) + ctx.author.mention
+                        embed.color = discord.Color.red()
+                        embed.add_field(name=tr.translate(msg['more']),value = tr.translate(msg['footer']))      
+                        await ctx.send(embed = embed)
                         return 
                     else:
+                        embed.description = tr.translate(msg["rg"]["sucess"].format(guildname))
+                        embed.color = discord.Color.green()
+                        embed.add_field(name=tr.translate(msg['more']),value = tr.translate(msg['footer']))                          
                         logger.info(msg["rg"]["sucess"].format(guildname))
-                        await ctx.send(tr.translate(msg["rg"]["sucess"].format(guildname)))
+                        await ctx.send(embed=embed)
                         if new.id_ao != None != "":
-                            await ctx.send(tr.translate(msg["rg"]["players"]["search"].format(new.id_ao)))
+                            embed.description = tr.translate(msg["rg"]["players"]["search"].format(new.id_ao))
+                            embed.color = discord.Color.dark_teal()
+                            embed.add_field(name=tr.translate(msg['more']),value = tr.translate(msg['footer']))
+                            await ctx.send(embed=embed)
                         else:
-                            await ctx.send(tr.translate(msg["rg"]["players"]["fail"]))
+                            embed.description = tr.translate(msg["rg"]["players"]["fail"])
+                            embed.color = discord.Color.dark_purple()
+                            embed.add_field(name=tr.translate(msg['more']),value = tr.translate(msg['footer']))
+                            await ctx.send(embed=embed)
                     result = new
                 try:
                        new_members =  await self.get_new_players_in_guild(result)
                 except: 
                     new_members = False
-                    await ctx.send(tr.translate(msg["rg"]["players"]["fail"]))
+                    embed.description = tr.translate(msg["rg"]["players"]["fail"])
+                    embed.add_field(name=tr.translate(msg['more']),value = tr.translate(msg['footer']))
+                    embed.color = discord.Color.dark_purple()
+                    await ctx.send(embed=embed)
                 if new_members:
                     for m in new_members:
                         news += f"{m}\n"
+                    new_members = False
+                    embed.description = news
+                    embed.color = discord.Color.green()
+                    embed.add_field(name=tr.translate(msg['more']),value = tr.translate(msg['footer']))
+                    await ctx.send(embed=embed)
             else:
                 await ctx.send(tr.translate(tr.translate(msg["rg"]["is-owner"]) + ctx.author.mention))
     
@@ -429,129 +456,7 @@ class Admin(commands.Cog):
         else:
             await ctx.send(tr.translate("Roles Not registred!\n[Owner Server] Use **?rr** for registration role administration."))
     
-    #comando para adicionar isenção no player ok
-    @commands.command("ai", help="Add player insention of tax")
-    async def add_player_i(self,ctx, nick_player, lang = "english"):
-        tr = mudarLingua(lang)
-        if not tr:
-            await ctx.send(tr)
-            return
-        if is_guild_reg(ctx.guild.id):
-            guild = obter_dados(Guild,ctx.guild.id)
-            lang = guild.lang
 
-            tr = mudarLingua(lang)
-            if not tr:
-                await ctx.send(tr)
-                return
-
-            if has_roles(ctx):
-                add_isention(ctx.guild.id,nick_player)
-                await ctx.send(tr.translate(f"{nick_player} added in insention!"))
-                remove_tax(ctx.guild.id,nick_player)
-                await ctx.send(tr.translate(f"{nick_player} is removed from tax system!"))
-            else:
-                await ctx.send(tr.translate("Not available role!"))
-        else:
-            await ctx.send(tr.translate(msg["en-us"]["not-reg"])) 
-    
-    #remove player da isenção ok 
-    @commands.command("ri", help="remove player insention of tax system")
-    async def re_player_i(self,ctx, nick_player, lang = "english"):
-        tr = mudarLingua(lang)
-        if not tr:
-            await ctx.send(tr)
-            return
-        if is_guild_reg(ctx.guild.id):
-            guild = obter_dados(Guild,ctx.guild.id)
-            if guild.lang:
-                lang = guild.lang
-            tr = mudarLingua(lang)
-            if not tr:
-                await ctx.send(tr)
-                return
-            if has_roles(ctx):
-                remove_isention(ctx.guild.id,nick_player)
-                await ctx.send(tr.translate(f"{nick_player} is removed insention of tax system"))
-            else:
-                await ctx.send(tr.translate("Not available role!"))
-        else:
-            await ctx.send(tr.translate(msg["not-reg"]))
-    #remove player da isenção ok
-    @commands.command("rtax", help="remove player tax system")
-    async def re_player_t(self,ctx, nick_player, lang = "english"):
-        tr = mudarLingua(lang)
-        if not tr:
-            await ctx.send(tr)
-            return
-        if is_guild_reg(ctx.guild.id):
-            guild = obter_dados(Guild,ctx.guild.id)
-            if guild.lang:
-                lang = guild.lang
-                tr = mudarLingua(lang)
-                if not tr:
-                    await ctx.send(tr)
-                    return
-            if has_roles(ctx):
-                gd = session.query(Members).get(ctx.guild.id)
-                new_tax = session.query(Taxa).filter_by(name = nick_player,guild_id = ctx.guild.id).first()
-                new_tax.deposito = 0
-                session.flush()
-                new_tax.saldo = gd.taxa_p
-                session.flush()
-                new_tax.ciclo = 1
-                session.commit()
-                await ctx.send(tr.translate(f"{nick_player} is removed from tax"))
-            else:
-                await ctx.send(tr.translate("Not available role!"))
-        else:
-            await ctx.send(tr.translate(msg["not-reg"]))                
-    
-    #checa taxa ok
-    @commands.command("ti", help="check tax of player")
-    async def ck_player_t(self,ctx, nick_player, lang="en-us"):
-        tr = mudarLingua(lang)
-        if not tr:
-            await ctx.send(tr)
-            return
-        dsid = str(ctx.guild.id)
-        if is_guild_reg(dsid):
-            dg = session.query(Guild).get(dsid)
-            lang = dg.lang
-            tr = mudarLingua(lang)
-            if not tr:
-                await ctx.send(tr)
-                return
-            if is_tax_silver_system(dsid):
-                if is_tax_exist(nick_player):
-                    p = session.query(Taxa).get(nick_player)
-                    m = session.query(Members).get(nick_player)
-                    deposito = p.deposito
-                    saldo = p.saldo
-                    ciclo = p.ciclo
-                    if not m.isention:
-                        if saldo >0:
-                            embed = discord.Embed(title= tr.translate(msg["tax"]["title"]),color=discord.Color.green())
-                            embed.add_field(name=tr.translate(msg["tax"]["saldo"]), value=size(saldo,system=si))
-                        else:
-                            embed = discord.Embed(title= tr.translate(msg["tax"]["ck-title"]),color=discord.Color.red())
-                            embed.add_field(name=tr.translate(msg["tax"]["saldo"]), value=f'{size(-saldo,system=si)}')
-                        embed.description= nick_player
-                        #embed.add_field(name=tr.translate(msg["tax"]["depo"], value=size(deposito,system=si))
-                        embed.add_field(name=tr.translate(msg["tax"]["cicle"]), value=ciclo)
-                    else:
-                        embed = discord.Embed(title= tr.translate(msg["tax"]["title"]),color=discord.Color.blue())
-                        embed.description= tr.translate(msg["tax"]["isention"])
-                    
-                    embed.add_field(name=tr.translate(msg["more"]), value= tr.translate(msg["footer"]), inline=False)
-
-                    await ctx.send(embed=embed)
-                else:
-                    await ctx.send(tr.translate(msg["tax"]["not-pl"]))
-            else:
-                await ctx.send(tr.translate(msg["tax"]["not-tax"]))
-        else:
-            await ctx.send(tr.translate(msg["tax"]["no-reg"]))
     '''
      TAREFAS DE TRANSMISSÕES DO TOP - TASKS
     '''
@@ -560,7 +465,7 @@ class Admin(commands.Cog):
     async def contrib_tax(self):
         lang = "english"
         tr = mudarLingua(lang)
-        datag = session.query(Guild).filter_by(top = True).all()
+        datag = session.query(Guild).filter(Guild.taxap_s == True).all()
         #client = discord.Client()
         ss = 0
         for g in datag:
@@ -572,26 +477,39 @@ class Admin(commands.Cog):
             except :
                 logger.error("Fail get channel for send contrib!")
                 return
-            if not tr:
-                await channel.send(tr)
-                return
             logger.warning(f'Iniciando sistema de contribuição da guilda: {g.name}')
-            taxa = session.query(Taxa).filter(Taxa.guild_id == g.id, Taxa.saldo < 0 ).all()
+
+            taxa = session.query(Members).filter(Members.guild_id == g.id, Members.isention == False ).all()
             embed = discord.Embed(title=tr.translate(msg["title_tax"]), color = discord.Color.dark_magenta())
             desc = "\n"
+
             desc += f"Quantidade de inadiplente: {len(taxa)}\n\n\n"
+            desc2 = desc
+            c = 0
             for p in taxa:
-                desc += f'**{p.name}** \n {size(-p.saldo,system=si)}\n\n'
-                ss+= int(p.saldo)
-            desc += "\n\n\n" + tr.translate(msg["tax"]["info"].format(size(-ss,system=si)))
+                if p.taxa.saldo <0:
+                    ss+= int(p.taxa.saldo)
+                    if(int(len(taxa)/2) <= c):
+                        desc += f'**{p.name} ** <@{p.ref_discord}> \n {size(-p.taxa.saldo,system=si)}\n\n'
+                    else:
+                        desc2 += f'**{p.name} ** <@{p.ref_discord}> \n {size(-p.taxa.saldo,system=si)}\n\n'
+                    c+=1
+            embed.add_field(name=tr.translate(msg["tax"]["info"]), value = size(-ss,system=si), inline=False)
             embed.add_field(name=tr.translate(msg["more"]), value=tr.translate(msg["footer"]), inline=False)
             embed.description= desc
             embed.set_footer(text = tr.translate(msg["tax"]["foot"]))
-            logger.info(f'Fim do sistema de contribuição da guilda: {g.name}')
+            
             try:
                 await channel.send(embed=embed)
             except:
-                logger.debug(f"<{g.name}> Não foi possivel encontrar canal")
+                logger.warning("Não existe canal")
+            embed.description= desc2
+            try:
+                await channel.send(embed=embed)
+            except:
+                logger.warning("Não existe canal")
+            logger.info(f'Fim do sistema de contribuição da guilda: {g.name}')
+
                 
     #top pve
     @tasks.loop(hours=24)
@@ -864,37 +782,47 @@ class Admin(commands.Cog):
             else:
                 await ctx.send(tr.translate(msg["rg"]["is-owner"]))
         else:
-            await ctx.send(tr.translate(msg["en-us"]["not-reg"]))
+            await ctx.send(tr.translate(msg["english"]["not-reg"]))
     
     #comando registra canal taxa
     @commands.command("rtx", help="Register channel for tax transmission")
-    async def registra_canal_taxa(self,ctx, tax = 0, min_fame=0, lang = "english"):
+    async def registra_canal_taxa(self,ctx, tax = None, min_fame = None, lang = "english"):
         tr = mudarLingua(lang)
-        if not tr:
-            await ctx.send(tr)
-            return
+        msg = init_json(cfg['msg_path'])
+        embed = discord.Embed(title= tr.translate("Sistema de Taxa de guild"), color=discord.Color.gold())
         if is_guild_reg(ctx.guild.id):
             datag = obter_dados(Guild,ctx.guild.id)
+            embed = discord.Embed(title= tr.translate(msg["taxa"]['title'].format(datag.name)), color=discord.Color.gold())
+            
             lang = datag.lang
             tr = mudarLingua(lang)
-            if not tr:
-                await ctx.send(tr)
-                return
             if has_roles(ctx):
                 datag.taxap_s = True
                 session.flush()
                 datag.canal_taxa = ctx.channel.id
                 session.flush()
-                datag.taxa_p = tax
-                session.flush()
-                datag.fame_taxa = min_fame
+                if tax:
+                    datag.taxa_p = tax
+                    session.flush()
+                if min_fame:
+                    datag.fame_taxa = min_fame
+                    session.flush()
                 session.commit()
                 logger.info(f"Canal para transmitir taxa: {ctx.channel.name}")
-                await ctx.send(tr.translate(f"Canal para transmitir taxa: {ctx.channel.name}"))
+                embed.description = tr.translate(f"Canal para transmitir taxa: #{ctx.channel.name}") 
+                embed.add_field(name=tr.translate("Taxa de prata:"), value=datag.taxa_p)
+                embed.add_field(name=tr.translate("Fama minima:"), value=datag.fame_taxa)
+                embed.add_field(name=tr.trans(msg['more']), value = msg['footer'])
+                await ctx.send(embed=embed)
             else:
-                await ctx.send(tr.translate(msg["rg"]["is-owner"]))
+                embed.description = tr.translate(tr.translate(msg["rg"]["is-owner"]))
+                embed.add_field(name=tr.trans(msg['more']), value = msg['footer'])
+                await ctx.send(embed=embed)
         else:
-            await ctx.send(tr.translate(msg["en-us"]["not-reg"]))
+            embed.color= discord.Color.dark_red()
+            embed.description = tr.translate(tr.translate(msg["english"]["not-reg"]))
+            embed.add_field(name=tr.trans(msg['more']), value = msg['footer'])
+            await ctx.send(embed=embed)
     
     #comando registra canal blacklist
     @commands.command("rb", help="Register channel for blacklist transmission")
@@ -918,7 +846,7 @@ class Admin(commands.Cog):
             else:
                 await ctx.send(tr.translate(msg["rg"]["is-owner"]))
         else:
-            await ctx.send(tr.translate(msg["en-us"]["not-reg"]))
+            await ctx.send(tr.translate(msg["english"]["not-reg"]))
     
     #comando registra canal 
     
