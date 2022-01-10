@@ -1,3 +1,4 @@
+import math
 from asyncio.events import new_event_loop, set_event_loop
 from datetime import time
 from logging import Logger
@@ -13,6 +14,8 @@ class Admin(commands.Cog):
     '''
         METODOS PRIVATIVOS
     '''
+    
+    
     #obtem novos jogadores
     async def get_new_players_in_guild(self, guild, members = None):
         logger.info(f"OBTENÇÃO: {guild.name}")
@@ -479,35 +482,72 @@ class Admin(commands.Cog):
                 return
             logger.warning(f'Iniciando sistema de contribuição da guilda: {g.name}')
 
-            taxa = session.query(Members).filter(Members.guild_id == g.id, Members.isention == False ).all()
+            taxa = session.query(Members).join(Taxa).filter(Members.guild_id == g.id, Members.isention == False, Taxa.saldo <0 ).all()
             embed = discord.Embed(title=tr.translate(msg["title_tax"]), color = discord.Color.dark_magenta())
             desc = "\n"
 
-            desc += f"Quantidade de inadiplente: {len(taxa)}\n\n\n"
             desc2 = desc
+            desc3 = desc
+            desc4 = desc
+            p2 = None
+            p3 = None 
+            p4 = None
             c = 0
+            max_ = math.ceil(len(taxa)/75)
             for p in taxa:
-                if p.taxa.saldo <0:
-                    ss+= int(p.taxa.saldo)
-                    if(int(len(taxa)/2) <= c):
-                        desc += f'**{p.name} ** <@{p.ref_discord}> \n {size(-p.taxa.saldo,system=si)}\n\n'
-                    else:
-                        desc2 += f'**{p.name} ** <@{p.ref_discord}> \n {size(-p.taxa.saldo,system=si)}\n\n'
-                    c+=1
-            embed.add_field(name=tr.translate(msg["tax"]["info"]), value = size(-ss,system=si), inline=False)
+                c+=1
+                sald = abs(p.taxa.saldo)
+                ss+= abs(p.taxa.saldo)
+                if c < 75:
+                    if c == 1:
+                        desc = f"\n**P 1/{int(max_)}** \n\n "
+                    desc += f'{c}º **{p.name} ** <@{p.ref_discord}> \n {size(sald,system=si)}\n\n'
+                if c >= 75 and c <150:
+                    p2 = True
+                    if c == 75:
+                        desc2 = f"\n**P 2/{int(max_)}** \n\n "
+                    desc2 += f'{c}º **{p.name} ** <@{p.ref_discord}> \n {size(sald,system=si)}\n\n'
+                if c >= 150 and c <225:
+                    p3 = True
+                    if c == 150:
+                        desc3 = f"\n**P 3/{int(max_)}** \n\n "
+                    desc3 += f'{c}º **{p.name} ** <@{p.ref_discord}> \n {size(sald,system=si)}\n\n'
+                if c >= 225 and c <300:   
+                    p4 = True 
+                    if c == 225:
+                        desc4 = f"\n**P 4/{int(max_)}** \n\n "
+                    desc4 += f'{c}º **{p.name} ** <@{p.ref_discord}> \n {size(sald,system=si)}\n\n'
+                    
+            embed.add_field(name=tr.translate("Quantidade de Inadiplente"), value = len(taxa), inline=True)
+            embed.add_field(name=tr.translate(msg["tax"]["info"]), value = size(ss,system=si), inline=True)
             embed.add_field(name=tr.translate(msg["more"]), value=tr.translate(msg["footer"]), inline=False)
-            embed.description= desc
             embed.set_footer(text = tr.translate(msg["tax"]["foot"]))
             
             try:
+                embed.description= desc
                 await channel.send(embed=embed)
             except:
                 logger.warning("Não existe canal")
-            embed.description= desc2
-            try:
-                await channel.send(embed=embed)
-            except:
-                logger.warning("Não existe canal")
+            
+            if p2 == True:
+                embed.description= desc2
+                try:
+                    await channel.send(embed=embed)
+                except:
+                    logger.warning("Não existe canal")
+            if p3 == True:
+                embed.description= desc3
+                try:
+                    await channel.send(embed=embed)
+                except:
+                    logger.warning("Não existe canal")
+                    
+            if p4 == True:
+                embed.description= desc4
+                try:
+                    await channel.send(embed=embed)
+                except:
+                    logger.warning("Não existe canal")
             logger.info(f'Fim do sistema de contribuição da guilda: {g.name}')
 
                 
@@ -1053,6 +1093,74 @@ class Admin(commands.Cog):
             logger.info(f"<{guild.name}> não possui canal info registrado")
  
     
+    @commands.command("lpd", help = "check player in guild")
+    async def list_player_debito(self,ctx, lang ="english"): 
+        guild = obter_dados(Guild,ctx.guild.id)
+        msg = init_json(cfg['msg_path'])
+        lang = guild.lang
+        logger.info(f"INICIANDO")
+        tr = mudarLingua(lang)
+        logger.info(f"Tentando encontrar registros de devedores no albion: {guild.name}")
+        embed = discord.Embed(title= tr.translate(f"Sistema de Taxa de guild - DEVEDORES 💰{guild.name}💰"), color=discord.Color.red())
+        if guild:
+            if guild.taxap_s == True:
+                memb = ''
+                memb2 = ''
+                memb3 = ''
+                list_caloteiro =  session.query(Members).join(Taxa).filter(Members.guild_id == ctx.guild.id, Members.isention == False, Taxa.saldo <0).all()
+                count =0
+                #logger.warning(list_caloteiro)
+                #logger.warning(f"Total de devedores: {len(list_caloteiro)}")
+                p2 = None
+                p3 = None
+                p4 = None
+                max_ = math.ceil(len(list_caloteiro)/75)
+                saldoTot = 0
+                for p in list_caloteiro:
+                    saldoTot += abs(p.taxa.saldo)
+                    count +=1
+                    if count <75:
+                        if count == 1:
+                            memb = tr.translate(f"\n**P 1/{int(max_)}**")
+                        memb += f"\n\n{count}º **{p.name}** - <@{p.ref_discord}> \n{size(-p.taxa.saldo, system=si)}"
+
+                    if  count >= 75 and count <150:
+                        p2 = True
+                        if count == 75 :
+                            memb2 = tr.translate(f"**P 2/{int(max_)}**")
+                        memb2 += f"\n\n{count}º **{p.name}** - <@{p.ref_discord}> \n{size(-p.taxa.saldo, system=si)}"
+                    if count >=150 and count <=225:
+                        p3 = True
+                        if count == 150 :
+                            memb3 = tr.translate(f"**P 3/{int(max_)}**")
+                        memb3 += f"\n\n{count}º **{p.name}** - <@{p.ref_discord}> \n{size(-p.taxa.saldo, system=si)}"
+                    if count >=225 and count <=300:
+                        p4 = True
+                        if count == 225 :
+                            memb4 = tr.translate(f"**P 4/{int(max_)}**")
+                        memb4 += f"\n\n{count}º **{p.name}** - <@{p.ref_discord}> \n{size(p.taxa.saldo, system=si)}"                        
+                embed.description= memb
+                embed.add_field(name=tr.translate(f"Quantidade de Devedores"), value = count, inline=True)
+                embed.add_field(name=tr.translate("Débito Total"), value = size(saldoTot,system=si), inline=True)
+                embed.add_field(name=tr.translate(msg['more']), value = tr.translate(msg['footer']), inline=False)
+                await ctx.send(embed=embed)
+                if p2 == True:
+                    embed.description= memb2
+                    await ctx.send(embed=embed)
+                
+                if p3 == True:
+                    embed.description= memb3
+                    await ctx.send(embed=embed)  
+                if p4 == True:
+                    embed.description= memb4
+                    await ctx.send(embed=embed)                       
+            else:
+                ctx.description= tr.translate(msg['tax']['not-tax'])
+                await ctx.send(embed=embed)
+        else:
+            embed.description= tr.translate(msg['not-reg'])
+            await ctx.send(embed=embed)
+ 
         
     def members_ds(self, g, player):
         dsg = bot.get_guild(g.id)

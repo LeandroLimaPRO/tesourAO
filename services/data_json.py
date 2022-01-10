@@ -69,3 +69,17 @@ def balance_form (resp):
   out = out.replace('"	"',",")
   out = out.replace('"',"")
   return out
+
+cols_name=["timestamp","player", "conte", "qtde", "fr"] #NOME DAS COLUNAS
+last_len = 0
+# consulta novos loots e retorna o mais recente
+def dataconsulta(arquivo):
+    global last_len
+    dataloot = pd.read_csv(arquivo, sep=";", header=None, names=cols_name)
+    now_len = len(dataloot)
+    if now_len != last_len:  
+        #print ("Contagem Agora: " + str(now_len) +  " Antes: " + str(last_len)) 
+        nowloot =  dataloot.loc[last_len:now_len,:]
+        #print(nowloot)
+        last_len = now_len
+        return nowloot

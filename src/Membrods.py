@@ -181,7 +181,7 @@ class Membro (commands.Cog):
                         await ctx.send(tr.translate("Não foi possivel atualizar seus dados."))
                         return
                     try:
-                        await ctx.author.edit(nick = "LeTurn")
+                        await ctx.author.edit(nick = jogador.name)
                     except HTTPException as e:
                         await ctx.send(tr.translate("Não foi possivel Editar Seu Nick seus dados.Você está um cargo acima do meu."))
                         logger.error(e)

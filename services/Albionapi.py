@@ -8,6 +8,12 @@ logger = logging.getLogger(__name__)
 def _url(endpoint):
             logger.debug(f"Setou url: {'https://gameinfo.albiononline.com/api/gameinfo' + endpoint}")
             return 'https://gameinfo.albiononline.com/api/gameinfo' + endpoint
+        
+def url_market(item,qualidade, city ='Caerleon'):
+    return f"https://www.albion-online-data.com/api/v2/stats/prices/{item}?locations={city}&qualities={qualidade}"
+
+def url_render(item):
+    return f"https://render.albiononline.com/v1/item/{item}.png"
 
 async def request (url, params=None):
         st = dt.now()
@@ -297,3 +303,9 @@ async def get_battles( offset=0, limit=51, _range=None,
 
 async def get_weapon_categories():
             return await request(_url('/items/_weaponCategories'))
+
+async def get_weapon(item):
+    return await request(_url(f'/items/{item}/data'))
+
+async def get_prince_item(item,qualidade,city='Caerleon'):
+    return await request(url_market(item,qualidade,city))
