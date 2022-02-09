@@ -197,12 +197,15 @@ class TaxaD(commands.Cog):
                 
                     if tx:
                         #sal = p.saldo
-                        tx.deposito += deposito
-                        session.flush()
+                        #tx.deposito = deposito
+                        #   ~[ ,k ,k ,k ,k ,k ,k ,k ,ksession.flush()
                         tx.saldo += deposito
                         session.flush()
                     session.commit()
-                    embed.add_field(name=tr.translate("Saldo"), value= size(tx.saldo, system=si))
+                    if tx.saldo >= 0:
+                        embed.add_field(name=tr.translate("Saldo"), value= size(tx.saldo, system=si))
+                    else:
+                        embed.add_field(name=tr.translate("Saldo"), value= -size(abs(tx.saldo), system=si))
                     embed.add_field(name=tr.translate("Deposito"), value= size(tx.deposito, system=si))
                 else:
                     embed.description = tr.translate("Este player não pertence a sua guilda!")
@@ -231,16 +234,23 @@ class TaxaD(commands.Cog):
             
                 g = obter_dados(Guild, id_) #inicializa banco de guilds
                 tr = mudarLingua(g.lang) #obtem lingua apartir do banco
-                tx =session.query(Members).join(Taxa).filter(Members.guild_id == g.id).all() #inicializa banco de taxas LEANDRO
+                tx =session.query(Members).join(Taxa).filter(Members.guild_id == g.id, Members.isention == False).all() #inicializa banco de taxas LEANDRO
                 embed= discord.Embed(title=tr.translate(msg["taxa"]["title"]), color=discord.Color.dark_gold())
                 taxa_p = g.taxa_p
                 for p in  tx:
-                    if p.ciclo >=0 :
-                        sal = p.saldo
-                        p.ciclo += 1
-                        session.flush()
-                        p.saldo = sal - taxa_p
-                        session.flush()
+                    ptx = obter_dados(Taxa,p.name)
+                    if ptx:
+                        if ptx.ciclo >=0 :
+                            sal = ptx.saldo
+                            ptx.ciclo += 1
+                            session.flush()
+                            ptx.saldo = sal - taxa_p
+                            session.flush()
+                        else:
+                            continue
+                    else:
+                        newT = Taxa(name = p.name, saldo = -taxa_p, ciclo = 1, guild_id = g.id)
+                        add_dados(newT)
                 session.commit()
                 embed.description = tr.translate(f"{ctx.author.mention} A **new cycle** has started! Debit of **{size(taxa_p,system=si)}** has been added to taxpayers")
                 embed.add_field(name=tr.translate(msg["more"]), value = tr.translate(msg["footer"]), inline=False)
@@ -418,12 +428,12 @@ class TaxaD(commands.Cog):
                     saldo = p.saldo
                     ciclo = p.ciclo
                     if not m.isention:
-                        if saldo >0:
+                        if saldo >=0:
                             embed = discord.Embed(title= tr.translate(msg["tax"]["title"]),color=discord.Color.green())
                             embed.add_field(name=tr.translate(msg["tax"]["saldo"]), value=size(saldo,system=si))
                         else:
                             embed = discord.Embed(title= tr.translate(msg["tax"]["ck-title"]),color=discord.Color.red())
-                            embed.add_field(name=tr.translate(msg["tax"]["saldo"]), value=f'{size(-saldo,system=si)}')
+                            embed.add_field(name=tr.translate(msg["tax"]["saldo"]), value=f'-{size(-saldo,system=si)}')
                         embed.description= nick_player
                         #embed.add_field(name=tr.translate(msg["tax"]["depo"], value=size(deposito,system=si))
                         embed.add_field(name=tr.translate(msg["tax"]["cicle"]), value=int(ciclo))
