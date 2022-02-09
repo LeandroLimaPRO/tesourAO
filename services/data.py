@@ -51,7 +51,7 @@ class Guild(Base):
     ##relação
 
     def __repr__(self):
-       return f"<Guild(id='{self.id}' |  name='{self.name}' | lang='{self.lang}' | members='{len(self.members)}' | blacklist= '{len(self.blacklist)}')>"
+       return f"<Guild(id='{self.id}' |  name='{self.name}' | lang='{self.lang}')>"
 
 class Members(Base):
     __tablename__ = 'members'
@@ -152,6 +152,7 @@ def is_blacklisted_from_guild(guild_id, nick_player):
             and Members.guild_id == guild_id
             and Members.is_blacklist == True)).first() '''#retorna bool se existir
         except SQLAlchemyError as e:
+            re = None
             logger.error(e)
         return re
 #verifica se existe o cargo

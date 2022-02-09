@@ -78,9 +78,11 @@ class Admin(commands.Cog):
                         pl = obter_dados(Members,p_name)
                         #print(pl)
                         if bool(pl):
+                            tx = obter_dados(Taxa,p_name)
                             pl.fame = int(p_fame)
                             pl.guild_id = guild.id
-                            pl.taxa.guild_id = guild.id
+                            if tx:
+                                tx.guild_id = guild.id
                             pl.ref_discord = ref_discord
                             pl.nick_discord = nick_discord
                             session.flush()
@@ -92,11 +94,11 @@ class Admin(commands.Cog):
                 return new_players
             else:
                 logger.warning(f"Não tem membros.")
-                return False
+                return None
         else:
            
             logger.debug(f"<{guild.name}> não pode verificar novos players devido a falta do ID DO ALBION. Tente atualizar com <?rg>")     
-            return False   
+            return None   
 
     #obtem novos jogadores
     async def remove_players_in_guild(self, guild, members = None):
@@ -112,7 +114,9 @@ class Admin(commands.Cog):
                     members = None
             logger.info(f"Verificando...")
             db_memb = session.query(Members).filter_by(guild_id = guild.id).all()
-            logger.warning(f"CONTAGENS: DB: {len(db_memb)} :: API:{len(members)}")
+            count_db = len(db_memb) if isinstance(db_memb,(list,tuple,dict)) else 0
+            count_api = len(members) if isinstance(members,(list,tuple,dict)) else 0
+            logger.warning(f"CONTAGENS: DB: {count_db} :: API:{count_api}")
             p_list = []
             del_p = 0
             del_players = []
@@ -155,9 +159,10 @@ class Admin(commands.Cog):
                 return del_players
             else:
                 logger.warning(F"Não foi possibel obter membros")
+                return None
         else:
             logger.debug(f"<{guild.name}> não pode verificar novos players devido a falta do ID DO ALBION. Tente atualizar com <?rg>")      
-            return False 
+            return None 
     #obtem ranking semanal do albion
     async def ranking_semanal(self,gid, tipo_ranking=0, sub_g = 0, region=0):
         '''
@@ -621,7 +626,10 @@ class Admin(commands.Cog):
                             d = await self.ranking_semanal(g.id_ao, tipo_ranking= 1)
                         except:
                             logger.error("Não foi possivel enviar informações do top ranking")
-                            await channel.send(tr.translate("Please verify re-register in bot. No get data from albion."))
+                            try:
+                                await channel.send(tr.translate("Please verify re-register in bot. No get data from albion."))
+                            except HTTPException as e:
+                                logger.error(e)
                         embed = discord.Embed(title= tr.translate(msg["title_pve"].format(g.name)), color=discord.Color.gold())
                         for p in d:
                             if d[p]["Fame"] >1000:
@@ -664,7 +672,7 @@ class Admin(commands.Cog):
                     logger.error(e)
                     members = False
                 if members:
-                    logger.info(f"Emcontrou registros: {len(members)} na tentativa {tentativa}")
+                    logger.info(f"Encontrou registros: {len(members)} na tentativa {tentativa}")
                     encontrou = True
                 if tentativa == 5:
                     logger.warning("Não foi possivel encontrar registros")
@@ -842,10 +850,10 @@ class Admin(commands.Cog):
                 datag.canal_taxa = ctx.channel.id
                 session.flush()
                 if tax:
-                    datag.taxa_p = tax
+                    datag.taxa_p = int(tax)
                     session.flush()
                 if min_fame:
-                    datag.fame_taxa = min_fame
+                    datag.fame_taxa = int(min_fame)
                     session.flush()
                 session.commit()
                 logger.info(f"Canal para transmitir taxa: {ctx.channel.name}")
@@ -860,7 +868,7 @@ class Admin(commands.Cog):
                 await ctx.send(embed=embed)
         else:
             embed.color= discord.Color.dark_red()
-            embed.description = tr.translate(tr.translate(msg["english"]["not-reg"]))
+            embed.description = tr.translate(tr.translate(msg["not-reg"]))
             embed.add_field(name=tr.trans(msg['more']), value = msg['footer'])
             await ctx.send(embed=embed)
     
@@ -1094,7 +1102,7 @@ class Admin(commands.Cog):
  
     
     @commands.command("lpd", help = "check player in guild")
-    async def list_player_debito(self,ctx, lang ="english"): 
+    async def list_player_debito(self,ctx, minDebito = 0, lang ="english"): 
         guild = obter_dados(Guild,ctx.guild.id)
         msg = init_json(cfg['msg_path'])
         lang = guild.lang
@@ -1107,7 +1115,7 @@ class Admin(commands.Cog):
                 memb = ''
                 memb2 = ''
                 memb3 = ''
-                list_caloteiro =  session.query(Members).join(Taxa).filter(Members.guild_id == ctx.guild.id, Members.isention == False, Taxa.saldo <0).all()
+                list_caloteiro =  session.query(Members).join(Taxa).filter(Members.guild_id == ctx.guild.id, Members.isention == False, Taxa.saldo < int(minDebito)).all()
                 count =0
                 #logger.warning(list_caloteiro)
                 #logger.warning(f"Total de devedores: {len(list_caloteiro)}")

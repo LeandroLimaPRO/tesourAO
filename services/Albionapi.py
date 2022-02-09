@@ -302,7 +302,7 @@ async def get_battles( offset=0, limit=51, _range=None,
                                 params=params)
 
 async def get_weapon_categories():
-            return await request(_url('/items/_weaponCategories'))
+    return await request(_url('/items/_weaponCategories'))
 
 async def get_weapon(item):
     return await request(_url(f'/items/{item}/data'))

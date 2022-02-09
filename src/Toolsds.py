@@ -176,6 +176,47 @@ class TaxaD(commands.Cog):
                 await ctx.send(tr.translate(msg["not-reg"]))
         else:
             await ctx.send(tr.translate(msg["not-role"]))
+            
+    @commands.command(name = 'adp', help= "increment value from tax deposit")
+    async def depositarPrataManualmente(self, ctx, nickname, deposito = 0,  lang = "english"):
+        tr = mudarLingua(lang)
+        msg = init_json(cfg['msg_path'])
+        id_ = ctx.guild.id #id do discord
+        embed= discord.Embed(title=tr.translate("Ajuste de contribuição"), color=discord.Color.dark_gold())
+        #taxa_file = cfg["taxa_fixa"] [path] do banco de pagamento de taxa
+        if is_guild_reg(id_):
+            if has_roles(ctx):
+                g = obter_dados(Guild, id_) #inicializa banco de guilds
+                #verifica se a guild foi registrado
+                tr = mudarLingua(g.lang) #obtem lingua apartir do banco
+                mb = is_player_exist_on_guild(ctx.guild.id,nickname)
+                if mb:
+                    tx = obter_dados(Taxa,nickname)
+                    embed= discord.Embed(title=f"Ajuste de contribuição - {nickname}", color=discord.Color.dark_gold())
+                    embed.description = tr.translate(f"Autor: {ctx.author.mention}")
+                
+                    if tx:
+                        #sal = p.saldo
+                        tx.deposito += deposito
+                        session.flush()
+                        tx.saldo += deposito
+                        session.flush()
+                    session.commit()
+                    embed.add_field(name=tr.translate("Saldo"), value= size(tx.saldo, system=si))
+                    embed.add_field(name=tr.translate("Deposito"), value= size(tx.deposito, system=si))
+                else:
+                    embed.description = tr.translate("Este player não pertence a sua guilda!")
+                embed.add_field(name=tr.translate(msg["more"]), value = tr.translate(msg["footer"]), inline=False)
+                await ctx.send(embed=embed)
+            else:
+                embed.add_field(name=tr.translate(msg["more"]), value = tr.translate(msg["footer"]), inline=False)
+                await ctx.send(tr.translate(msg["not-role"]))
+        else:
+            embed.add_field(name=tr.translate(msg["more"]), value = tr.translate(msg["footer"]), inline=False)
+            embed.description = tr.translate(msg["not-reg"])
+            await ctx.send(embed=embed)  
+  
+            
     @commands.command(name = 'at', help= "Starts new contribution period (adds + fee to be paid)")
     async def atualiza_periodo(self, ctx, lang = "english"):
         tr = mudarLingua(lang)
@@ -190,7 +231,7 @@ class TaxaD(commands.Cog):
             
                 g = obter_dados(Guild, id_) #inicializa banco de guilds
                 tr = mudarLingua(g.lang) #obtem lingua apartir do banco
-                tx =session.query(Taxa).filter(Taxa.guild_id == g.id).all() #inicializa banco de taxas
+                tx =session.query(Members).join(Taxa).filter(Members.guild_id == g.id).all() #inicializa banco de taxas LEANDRO
                 embed= discord.Embed(title=tr.translate(msg["taxa"]["title"]), color=discord.Color.dark_gold())
                 taxa_p = g.taxa_p
                 for p in  tx:

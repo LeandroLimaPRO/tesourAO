@@ -130,6 +130,7 @@ class Membro (commands.Cog):
     async def register_me(self, ctx, nick_name, lang = 'english'):
         tr= mudarLingua(lang)
         logger.info("Iniciando registro de player")
+        return ctx.send(tr.translate("Este comando foi desabilitado. Pois há um sistema automatico para entradas e saidas de players da sua guillda"))
         if is_guild_reg(ctx.guild.id):
             guild = obter_dados(Guild,ctx.guild.id)
             tr = mudarLingua(guild.lang)
